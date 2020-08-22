@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Surge",
+        "repositoryURL": "https://github.com/Jounce/Surge.git",
+        "state": {
+          "branch": null,
+          "revision": "b9777a8d0c1df1ed0a22d238fb987c60d13513ac",
+          "version": "2.3.0"
+        }
+      },
+      {
+        "package": "swift-argument-parser",
+        "repositoryURL": "https://github.com/apple/swift-argument-parser",
+        "state": {
+          "branch": null,
+          "revision": "15351c1cd009eba0b6e438bfef55ea9847a8dc4a",
+          "version": "0.3.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
