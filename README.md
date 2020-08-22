@@ -1,5 +1,42 @@
 # Wallace
 
+Named after [Alfred Russel Wallace](https://en.wikipedia.org/wiki/Alfred_Russel_Wallace), because naming a package Darwin on iOS is a bad idea.
+
+This is a command line tool to generate heterogenous groups of students, specifically for the X-HEC Entrepreneur Master. 
+This package is split between `Wallace`, which contains code specific for the use case and wraps it around a command line interface, and the `WallaceCore` package, which is completely agnostic and could be applied to other similar problems.
+
+## Installation
+
+1. Clone the repository
+2. Run the following:
+
+```shell
+$ swift build -c release
+$ cd .build/release
+$ cp -f Wallace /usr/local/bin/wallace
+```
+
+
+## Usage
+
+All the commands support the following options:
+
+- `--group-size`: The desired size of groups (default: 3)
+- `--population-size`: The size of a population at a given generation (default: 10)
+- `--parent-count`: Number of parents selected at a given generation (default: 5)
+- `--mutation-probability`: Probability of a mutation happening on a child chromosome (default: 0.7)
+- `--max-generation`: Max number of generations. Increase to run the algorithm longer (default: 1000)
+-  `--debug`: Enable debug logs
+
+The first command to run is `wallace jura-groups <file_url>`, with a reference to a csv file containing the students.
+A file containing the groups will be outputed, and a file saving the students in an internal format will be saved.
+
+You can then run in order
+- `wallace crea-groups` which create groups for each minor (Deep Tech & High Touch)
+- `wallace redressement-groups`
+- `wallace scale-up groups`
+
+
 ## Literature on genetic algorithms
 
 A genetic algorithm is a search heuristic that is inspired by Charles Darwin’s theory of natural evolution. This algorithm reflects the process of natural selection where the fittest individuals are selected for reproduction in order to produce offspring of the next generation.
