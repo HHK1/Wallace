@@ -21,3 +21,11 @@ func insertionMutation(chromosome: Chromosome) -> Chromosome {
     return Chromosome(genes: genes)
 }
 
+func multiInsertionMutation(chromosome: Chromosome, distribution: [Double]) -> Chromosome {
+    let numberOfMutations = randomNumber(probabilities: distribution)
+    var mutatedChromosome = chromosome
+    for _ in 0...numberOfMutations {
+        mutatedChromosome = insertionMutation(chromosome: chromosome)
+    }
+    return mutatedChromosome
+}

@@ -55,7 +55,15 @@ public class Grouping<StudentType: Student> {
     }
     
     public func run() -> Array<Array<StudentType>> {
-        let solver  = Solver(initialPopulation: makeInitialPopulation(count: configuration.populationSize),
+        var population: Array<Chromosome> = []
+        for _ in 0...configuration.parentCount {
+            let solver  = Solver(initialPopulation: makeInitialPopulation(count: configuration.populationSize),
+                                 fitness: self.fitness(chromosome:), configuration: configuration)
+            
+            let finalChromosome =  solver.run()
+            population.append(finalChromosome)
+        }
+        let solver  = Solver(initialPopulation: population,
                              fitness: self.fitness(chromosome:), configuration: configuration)
         
         let finalChromosome =  solver.run()

@@ -19,6 +19,9 @@ struct Options: ParsableArguments {
 
     @Option(help: "Max number of generations. Increase to run the algorithm longer")
     var maxGeneration: Int = 1000
+    
+    @Option(help: "The max number of permutations in a single mutation")
+    var maxNumberPermutation: Int = 4
 
     @Flag(help: "Enable debug logs")
     var debug = false
@@ -27,7 +30,7 @@ struct Options: ParsableArguments {
 struct Wallace: ParsableCommand {
     
     static let configuration = CommandConfiguration(abstract: "Group students for each activity",
-                                                    subcommands: [JuraGroups.self, CreaGroups.self, RedressementGroups.self, ScaleUpGroups.self])
+                                                    subcommands: [JuraGroups.self, CreaGroups.self, RedressementGroups.self, ScaleUpGroups.self, ExportStudents.self])
 
     struct JuraGroups: ParsableCommand  {
         
@@ -69,6 +72,21 @@ struct Wallace: ParsableCommand {
         }
     }
     
+    struct ScaleUpGroups: ParsableCommand  {
+          
+          @OptionGroup var options: Options
+
+          func run() throws {
+              
+              CLILogger.shared.debug = options.debug
+              let students = try decodeStudents()
+              
+              let groups = makeGroups(students: students, options: options)
+              let updatedStudents = generateNewStudents(groups: groups, keyPath: \.scaleUpGroups)
+              try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "scaleUp.json")
+          }
+    }
+    
     struct RedressementGroups: ParsableCommand  {
           
           @OptionGroup var options: Options
@@ -84,18 +102,44 @@ struct Wallace: ParsableCommand {
           }
     }
     
-    struct ScaleUpGroups: ParsableCommand  {
-          
-          @OptionGroup var options: Options
+    struct ExportStudents: ParsableCommand {
+        
+        typealias Seminaire = Array<Array<String>?>
+        
+        
+        func run() throws {
+            
+            let students = try decodeStudents()
+            let initialValue: Dictionary<String, Seminaire> = [
+                "jura": Array(repeating: [], count: students.count),
+                "crea": Array(repeating: [], count: students.count),
+                "scaleUp": Array(repeating: [], count: students.count),
+                "redressement": Array(repeating: [], count: students.count)
+            ]
+            
+            func addStudent(student: HECStudent, path: KeyPath<HECStudent, Vector?>, groupName: String, aggregated: Dictionary<String, Seminaire>) -> Seminaire {
+                guard var seminaire = aggregated[groupName] else { return [] }
+                guard let index = student[keyPath: path]?.firstIndex(of: 1) else { return seminaire }
+                var group = seminaire[index] ?? []
+                group.append(student.description)
+                seminaire[index] = group
+                return seminaire
+            }
+            
+            let allGroups = students.reduce(initialValue) { (aggregated, student) -> Dictionary<String, Seminaire> in
+                let jura = addStudent(student: student, path: \.juraGroups, groupName: "jura", aggregated: aggregated)
+                let crea = addStudent(student: student, path: \.creaGroups, groupName: "crea", aggregated: aggregated)
+                let scaleUp = addStudent(student: student, path: \.scaleUpGroups, groupName: "scaleUp", aggregated: aggregated)
+                let redressement = addStudent(student: student, path: \.redressementGroups, groupName: "redressement", aggregated: aggregated)
+                return ["jura": jura, "crea": crea, "scaleUp":scaleUp, "redressement": redressement]
+            }
+            let encoder = JSONEncoder()
 
-          func run() throws {
-              
-              CLILogger.shared.debug = options.debug
-              let students = try decodeStudents()
-              
-              let groups = makeGroups(students: students, options: options)
-              try saveGroupsAndStudents(groups: groups, students: students, filename: "scaleUp.json")
-          }
+            try allGroups.forEach { (key, seminaire) in
+                let seminaireData = try encoder.encode(seminaire)
+                try writeToFile(data: seminaireData, path: "\(key)_data.json")
+            }
+        }
     }
 }
 
@@ -104,7 +148,8 @@ func makeGroups(students: [HECStudent], options: Options) -> [Array<HECStudent>]
     let configuration = Configuration(populationSize: options.populationSize,
                                                  mutationProbability: options.mutationProbability,
                                                  maxGenerations: options.maxGeneration,
-                                                 parentCount: options.parentCount)
+                                                 parentCount: options.parentCount,
+                                                 maxNumberPermutation: options.maxNumberPermutation)
                
     let factors: [Float] = [5.0, 1.0, 1.0, 1.0, 1.0]
     let grouping = Grouping(students: students, factors: factors,
@@ -136,10 +181,15 @@ func generateNewStudents(groups: [Array<HECStudent>], keyPath: WritableKeyPath<H
 */
 func saveGroupsAndStudents(groups: [Array<HECStudent>], students: [HECStudent], filename: String) throws {
     let encoder = JSONEncoder()
-    let simplifiedGroups = groups.map { $0.map { StudentName(firstName: $0.firstName, LastName: $0.lastName) }}
-    let groupsEncoded = try encoder.encode(simplifiedGroups)
+    let simplifiedGroups = groups.map { $0.map { $0.shortDescription }}
+    let simpfliedGroupsString = simplifiedGroups.reduce("", { (stringData, group) -> String in
+        var newData = stringData
+        newData.append(contentsOf: group.joined(separator: ","))
+        newData.append("\n")
+        return newData
+    })
     let studentsEncoded = try encoder.encode(students)
-    try writeToFile(data: groupsEncoded, path: filename)
+    try writeToFile(data: simpfliedGroupsString.data(using: .utf8)!, path: filename)
     try writeToFile(data: studentsEncoded, path: "students.json")
 }
 

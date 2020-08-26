@@ -12,6 +12,7 @@ struct Solver {
     let initialPopulation: Array<Chromosome>
     let fitness: (_ chromosome: Chromosome) -> Float
     let configuration: Configuration
+    let mutationDistribution: [Double]
     
     init(initialPopulation: Array<Chromosome>,
          fitness: @escaping (_ chromosome: Chromosome) -> Float,
@@ -20,6 +21,7 @@ struct Solver {
         self.initialPopulation = initialPopulation
         self.fitness = fitness
         self.configuration = configuration
+        self.mutationDistribution = poissonDistribution(lambda: 1, max: configuration.maxNumberPermutation)
     }
     
     func run() -> Chromosome {
@@ -40,6 +42,7 @@ struct Solver {
         
         logInfo("Stopped iteration after \(generation) generations")
         let bestFit = selectParents(population: population).first!
+        logInfo("Best fit is: \(self.fitness(bestFit))")
         return bestFit
     }
     
@@ -52,9 +55,11 @@ struct Solver {
         }
         
         let selectedFitness = fitnessOfPopulation[0...configuration.parentCount]
-        logDebug("Fitness score: \(selectedFitness.first!.1)")
+        logVerbose("Fitness score: \(selectedFitness.first!.1)")
         
-        return selectedFitness.map{ population[$0.0] }
+        var parents = selectedFitness.map{ population[$0.0] }
+        parents.append(population[fitnessOfPopulation.last!.0])
+        return parents
     }
     
     func createOffsprings(parents: Array<Chromosome>) -> Array<Chromosome> {
@@ -72,7 +77,8 @@ struct Solver {
         var mutatedOffspring: [Chromosome] = []
         offsprings.forEach { (offspring) in
             if Float.random(in: 0...1) < configuration.mutationProbability {
-                mutatedOffspring.append(insertionMutation(chromosome: offspring))
+                mutatedOffspring.append(multiInsertionMutation(chromosome: offspring,
+                                                               distribution: mutationDistribution))
             } else {
                 mutatedOffspring.append(offspring)
             }

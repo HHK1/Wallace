@@ -9,10 +9,10 @@ import Foundation
 import WallaceCore
 
 enum Mineur: String, Codable {
-    case DeepTech = "Deep Tech"
-    case HighTouch = "High Touch"
+    case DeepTech = "deep tech"
+    case HighTouch = "high touch"
 }
-
+        
 struct HECStudent: Student, Codable {
     let id: UInt8
     let firstName: String
@@ -27,11 +27,12 @@ struct HECStudent: Student, Codable {
     var juraGroups: Vector?
     var creaGroups: Vector?
     var redressementGroups: Vector?
+    var scaleUpGroups: Vector?
     
     init(id: UInt8, row: [String]) {
         self.id = id
-        self.firstName = row[0]
-        self.lastName = row[1]
+        self.firstName = row[0].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
+        self.lastName = row[1].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
         self.isAGirl = Bool(row[2])!
         self.hasACar = false
         self.isFromHEC = Bool(row[3])!
@@ -46,14 +47,18 @@ struct HECStudent: Student, Codable {
         var vector = zip(paths, factors).map { (path, factor) -> Float in
             factor * (self[keyPath: path] ? 1 : 0)
         }
+        
+        let minorDimension: Float = self.mineur == Mineur.DeepTech ? 0.9 : 0
+        vector.append(minorDimension)
+        
         if let juraGroups = juraGroups {
             vector.append(contentsOf: juraGroups)
         }
         if let creaGroups = creaGroups {
             vector.append(contentsOf: creaGroups)
         }
-        if let redressementGroups = redressementGroups {
-            vector.append(contentsOf: redressementGroups)
+        if let scaleUpGroups = scaleUpGroups {
+            vector.append(contentsOf: scaleUpGroups)
         }
         return vector
     }
@@ -61,15 +66,24 @@ struct HECStudent: Student, Codable {
     var description: String {
         var type = ""
         if self.isFromPolytechnique {
-            type = "X"
+            type = "Ingénieur"
         } else if self.isFromHEC {
-            type = "HEC"
+            type = "Commerce"
         } else if self.isFromOther {
-            type = "Divers"
+            type = "Autres"
         }
-        let gender = self.isAGirl ? "Girl" : "Boy"
-        return "\(self.firstName) \(self.lastName): \(type), \(gender)"
+        let gender = self.isAGirl ? "Fille" : "Garçon"
+        let juraGroup = self.juraGroups!.firstIndex(of: 1.0)!
+        let creaGroup = self.creaGroups!.firstIndex(of: 1.0)!
+        let scaleUpGroup = self.scaleUpGroups!.firstIndex(of: 1.0)!
+        let redressementgroup = self.redressementGroups!.firstIndex(of: 1.0)!
+        return "\(self.firstName) \(self.lastName); \(gender); \(type); \(self.mineur.rawValue); \(juraGroup); \(creaGroup); \(scaleUpGroup); \(redressementgroup)"
     }
+    
+    var shortDescription: String {
+        return "\(self.firstName) \(self.lastName)"
+    }
+        
 }
 
 struct StudentName: Codable {
