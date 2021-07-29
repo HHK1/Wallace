@@ -9,8 +9,8 @@ import Foundation
 import WallaceCore
 
 enum Mineur: String, Codable {
-    case DeepTech = "deep tech"
-    case HighTouch = "high touch"
+    case DeepTech = "Deep Tech"
+    case HighTouch = "High Touch"
 }
         
 struct HECStudent: Student, Codable {
@@ -18,10 +18,16 @@ struct HECStudent: Student, Codable {
     let firstName: String
     let lastName: String
     let isAGirl: Bool
-    let hasACar: Bool
+    
     let isFromHEC: Bool
     let isFromPolytechnique: Bool
     let isFromOther: Bool
+    
+    let isBusiness: Bool
+    let isEngineer: Bool
+    let isOther: Bool
+    
+    let isC2: Bool
     let mineur: Mineur
     
     var juraGroups: Vector?
@@ -31,24 +37,33 @@ struct HECStudent: Student, Codable {
     
     init(id: UInt8, row: [String]) {
         self.id = id
-        self.firstName = row[0].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
-        self.lastName = row[1].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
-        self.isAGirl = Bool(row[2])!
-        self.hasACar = false
-        self.isFromHEC = Bool(row[3])!
-        self.isFromOther = Bool(row[4])!
-        self.isFromPolytechnique = Bool(row[5])!
+        self.firstName = row[1].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
+        self.lastName = row[0].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
+        self.isAGirl = row[2] == "F"
+        
+        let recruitement = row[3]
+        self.isFromHEC = recruitement == "HEC GE"
+        self.isFromPolytechnique = recruitement == "X"
+        self.isFromOther = recruitement == "MSc"
+            
+        let category = row[4]
+        
+        self.isBusiness = category == "Business"
+        self.isEngineer = category == "Engineer"
+        self.isOther = category == "Other"
+        
+        self.isC2 = row[5] == "C2 Proficient (mother tongue)"
         self.mineur = Mineur(rawValue: row[6])!
     }
     
     func makeAttributeVector(factors: [Float]) -> Vector {
-        let paths: [KeyPath<HECStudent, Bool>]  = [\.isAGirl, \.hasACar, \.isFromHEC, \.isFromPolytechnique, \.isFromOther]
+        let paths: [KeyPath<HECStudent, Bool>]  = [\.isAGirl, \.isFromHEC, \.isFromPolytechnique, \.isFromOther, \.isBusiness, \.isEngineer, \.isOther, \.isC2]
         assert(factors.count == paths.count, "Provide a factor for each dimension")
         var vector = zip(paths, factors).map { (path, factor) -> Float in
             factor * (self[keyPath: path] ? 1 : 0)
         }
         
-        let minorDimension: Float = self.mineur == Mineur.DeepTech ? 0.9 : 0
+        let minorDimension: Float = self.mineur == Mineur.DeepTech ? 1.0 : 0
         vector.append(minorDimension)
         
         if let juraGroups = juraGroups {
@@ -65,25 +80,40 @@ struct HECStudent: Student, Codable {
     
     var description: String {
         var type = ""
+        var recruitement = ""
         if self.isFromPolytechnique {
-            type = "Ingénieur"
+            recruitement = "X"
         } else if self.isFromHEC {
-            type = "Commerce"
+            recruitement = "HEC GE"
         } else if self.isFromOther {
-            type = "Autres"
+            recruitement = "MSc"
         }
-        let gender = self.isAGirl ? "Fille" : "Garçon"
+        
+        if self.isEngineer {
+            type = "Engineer"
+        } else if self.isBusiness {
+            type = "Business"
+        } else if self.isOther {
+            type = "Other"
+        }
+        
+        let gender = self.isAGirl ? "F" : "M"
+        let frenchSpeaker = self.isC2 ? "C2" : "Not C2"
+        
         let juraGroup = self.juraGroups!.firstIndex(of: 1.0)!
         let creaGroup = self.creaGroups!.firstIndex(of: 1.0)!
         let scaleUpGroup = self.scaleUpGroups!.firstIndex(of: 1.0)!
         let redressementgroup = self.redressementGroups!.firstIndex(of: 1.0)!
-        return "\(self.firstName) \(self.lastName); \(gender); \(type); \(self.mineur.rawValue); \(juraGroup); \(creaGroup); \(scaleUpGroup); \(redressementgroup)"
+        return "\(self.firstName), \(self.lastName), \(gender), \(recruitement), \(type), \(frenchSpeaker), \(self.mineur.rawValue), \(juraGroup), \(creaGroup), \(scaleUpGroup), \(redressementgroup)"
     }
     
     var shortDescription: String {
         return "\(self.firstName) \(self.lastName)"
     }
-        
+    
+    static var csvTitle: String {
+        return "First Name, Last Name, Gender, Recruitement, Category, French Speaker, Mineur, Groupe Jura, Groupe Créa, Groupe Scale Up, Groupe Redressement \n"
+    }
 }
 
 struct StudentName: Codable {

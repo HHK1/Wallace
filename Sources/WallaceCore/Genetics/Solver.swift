@@ -21,7 +21,7 @@ struct Solver {
         self.initialPopulation = initialPopulation
         self.fitness = fitness
         self.configuration = configuration
-        self.mutationDistribution = poissonDistribution(lambda: 1, max: configuration.maxNumberPermutation)
+        self.mutationDistribution = poissonDistribution(lambda: 1.0, max: configuration.maxNumberPermutation)
     }
     
     func run() -> Chromosome {
@@ -54,7 +54,7 @@ struct Solver {
             return lhs.1 > rhs.1
         }
         
-        let selectedFitness = fitnessOfPopulation[0...configuration.parentCount]
+        let selectedFitness = fitnessOfPopulation[0...configuration.parentCount - 1]
         logVerbose("Fitness score: \(selectedFitness.first!.1)")
         
         var parents = selectedFitness.map{ population[$0.0] }

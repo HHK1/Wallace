@@ -30,7 +30,7 @@ struct Options: ParsableArguments {
 struct Wallace: ParsableCommand {
     
     static let configuration = CommandConfiguration(abstract: "Group students for each activity",
-                                                    subcommands: [JuraGroups.self, CreaGroups.self, RedressementGroups.self, ScaleUpGroups.self, ExportStudents.self])
+                                                    subcommands: [JuraGroups.self, CreaGroups.self, RedressementGroups.self, ScaleUpGroups.self, ExportStudents.self, RunAll.self])
 
     struct JuraGroups: ParsableCommand  {
         
@@ -44,10 +44,7 @@ struct Wallace: ParsableCommand {
             CLILogger.shared.debug = options.debug
             let data = try String(contentsOf: URL(fileURLWithPath: url))
             let students = parseStudentFile(data: data)
-            
-            let groups = makeGroups(students: students, options: options)
-            let updatedStudents = generateNewStudents(groups: groups, keyPath: \.juraGroups)
-            try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "jura.json")
+            _ = try makeJuraGroups(students: students, options: options)
         }
     }
     
@@ -59,16 +56,7 @@ struct Wallace: ParsableCommand {
             
             CLILogger.shared.debug = options.debug
             let students = try decodeStudents()
-            let highTouchStudents = students.filter({ $0.mineur == Mineur.HighTouch })
-            let deepTechStudents = students.filter({ $0.mineur == Mineur.DeepTech })
-
-            let highTouchGroups = makeGroups(students: highTouchStudents, options: options)
-            let deepTechGroups = makeGroups(students: deepTechStudents, options: options)
-            
-            var groups = highTouchGroups
-            groups.append(contentsOf: deepTechGroups)
-            let updatedStudents = generateNewStudents(groups: groups, keyPath: \.creaGroups)
-            try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "crea.json")
+            _ = try makeCreaGroups(students: students, options: options)
         }
     }
     
@@ -80,10 +68,7 @@ struct Wallace: ParsableCommand {
               
               CLILogger.shared.debug = options.debug
               let students = try decodeStudents()
-              
-              let groups = makeGroups(students: students, options: options)
-              let updatedStudents = generateNewStudents(groups: groups, keyPath: \.scaleUpGroups)
-              try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "scaleUp.json")
+              _ = try makeScaleUpGroups(students: students, options: options)
           }
     }
     
@@ -95,52 +80,80 @@ struct Wallace: ParsableCommand {
               
               CLILogger.shared.debug = options.debug
               let students = try decodeStudents()
-              
-              let groups = makeGroups(students: students, options: options)
-              let updatedStudents = generateNewStudents(groups: groups, keyPath: \.redressementGroups)
-              try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "redressement.json")
+              _ = try makeRedressementGroups(students: students, options: options)
           }
     }
     
     struct ExportStudents: ParsableCommand {
-        
-        typealias Seminaire = Array<Array<String>?>
-        
-        
+                
         func run() throws {
             
             let students = try decodeStudents()
-            let initialValue: Dictionary<String, Seminaire> = [
-                "jura": Array(repeating: [], count: students.count),
-                "crea": Array(repeating: [], count: students.count),
-                "scaleUp": Array(repeating: [], count: students.count),
-                "redressement": Array(repeating: [], count: students.count)
-            ]
-            
-            func addStudent(student: HECStudent, path: KeyPath<HECStudent, Vector?>, groupName: String, aggregated: Dictionary<String, Seminaire>) -> Seminaire {
-                guard var seminaire = aggregated[groupName] else { return [] }
-                guard let index = student[keyPath: path]?.firstIndex(of: 1) else { return seminaire }
-                var group = seminaire[index] ?? []
-                group.append(student.description)
-                seminaire[index] = group
-                return seminaire
-            }
-            
-            let allGroups = students.reduce(initialValue) { (aggregated, student) -> Dictionary<String, Seminaire> in
-                let jura = addStudent(student: student, path: \.juraGroups, groupName: "jura", aggregated: aggregated)
-                let crea = addStudent(student: student, path: \.creaGroups, groupName: "crea", aggregated: aggregated)
-                let scaleUp = addStudent(student: student, path: \.scaleUpGroups, groupName: "scaleUp", aggregated: aggregated)
-                let redressement = addStudent(student: student, path: \.redressementGroups, groupName: "redressement", aggregated: aggregated)
-                return ["jura": jura, "crea": crea, "scaleUp":scaleUp, "redressement": redressement]
-            }
-            let encoder = JSONEncoder()
-
-            try allGroups.forEach { (key, seminaire) in
-                let seminaireData = try encoder.encode(seminaire)
-                try writeToFile(data: seminaireData, path: "\(key)_data.json")
-            }
+            try exportStudents(students: students)
         }
     }
+    
+    struct RunAll: ParsableCommand  {
+        
+        @Argument(help: "The input file url containing the students")
+        var url: String
+        
+        @OptionGroup var options: Options
+
+        func run() throws {
+            CLILogger.shared.debug = options.debug
+            let data = try String(contentsOf: URL(fileURLWithPath: url))
+            var students = parseStudentFile(data: data)
+            students = try makeJuraGroups(students: students, options: options)
+            students = try makeCreaGroups(students: students, options: options)
+            students = try makeScaleUpGroups(students: students, options: options)
+            students = try makeRedressementGroups(students: students, options: options)
+            try exportStudents(students: students)
+        }
+    }
+}
+
+
+func makeJuraGroups(students: [HECStudent], options: Options) throws -> [HECStudent] {
+    let groups = makeGroups(students: students, options: options)
+    let updatedStudents = generateNewStudents(groups: groups, keyPath: \.juraGroups)
+    try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "jura.txt")
+    return updatedStudents
+}
+
+func makeCreaGroups(students: [HECStudent], options: Options) throws -> [HECStudent] {
+    let highTouchStudents = students.filter({ $0.mineur == Mineur.HighTouch })
+    let deepTechStudents = students.filter({ $0.mineur == Mineur.DeepTech })
+
+    let highTouchGroups = makeGroups(students: highTouchStudents, options: options)
+    let deepTechGroups = makeGroups(students: deepTechStudents, options: options)
+    
+    var groups = highTouchGroups
+    groups.append(contentsOf: deepTechGroups)
+    let updatedStudents = generateNewStudents(groups: groups, keyPath: \.creaGroups)
+    try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "crea.txt")
+    return updatedStudents
+}
+
+func makeScaleUpGroups(students: [HECStudent], options: Options) throws -> [HECStudent] {
+    let groups = makeGroups(students: students, options: options)
+    let updatedStudents = generateNewStudents(groups: groups, keyPath: \.scaleUpGroups)
+    try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "scaleUp.txt")
+    return updatedStudents
+}
+
+func makeRedressementGroups(students: [HECStudent], options: Options) throws -> [HECStudent] {
+    let groups = makeGroups(students: students, options: options)
+    let updatedStudents = generateNewStudents(groups: groups, keyPath: \.redressementGroups)
+    try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "redressement.txt")
+    return updatedStudents
+}
+
+func exportStudents(students: [HECStudent]) throws {
+    let export = students.reduce(HECStudent.csvTitle) { (aggregated, student) -> String in
+        return "\(aggregated)\(student.description)\n"
+    }
+    try writeToFile(data: Data(export.utf8), path: "export.csv")
 }
 
 
@@ -151,7 +164,7 @@ func makeGroups(students: [HECStudent], options: Options) -> [Array<HECStudent>]
                                                  parentCount: options.parentCount,
                                                  maxNumberPermutation: options.maxNumberPermutation)
                
-    let factors: [Float] = [5.0, 1.0, 1.0, 1.0, 1.0]
+    let factors: [Float] = [5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0  ]
     let grouping = Grouping(students: students, factors: factors,
                             groupSize: options.groupSize, configuration: configuration)
     return grouping.run()
@@ -184,7 +197,7 @@ func saveGroupsAndStudents(groups: [Array<HECStudent>], students: [HECStudent], 
     let simplifiedGroups = groups.map { $0.map { $0.shortDescription }}
     let simpfliedGroupsString = simplifiedGroups.reduce("", { (stringData, group) -> String in
         var newData = stringData
-        newData.append(contentsOf: group.joined(separator: ","))
+        newData.append(contentsOf: group.joined(separator: ", "))
         newData.append("\n")
         return newData
     })

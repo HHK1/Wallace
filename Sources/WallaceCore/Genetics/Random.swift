@@ -51,7 +51,8 @@ func factorial(_ n: Int) -> Int {
     }
 }
 
-func poissonDistribution(lambda: Int, max: Int) -> [Double] {
+func poissonDistribution(lambda: Double, max: Int) -> [Double] {
     var poissonDistribution = (1...max).map({ (exp(-lambda) * pow(lambda, Double($0)))/(Double(factorial($0)))})
     poissonDistribution.insert(0, at: 0)
+    return poissonDistribution
 }

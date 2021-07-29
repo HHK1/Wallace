@@ -37,9 +37,10 @@ final class WallaceTests: XCTestCase {
            return Float(first - last)
        }
         
-       let chromosome = Chromosome(genes: (1...20).map { $0 })
-       let initialPopulation = Array(repeating: chromosome, count: 10)
-       let solver = Solver(initialPopulation: initialPopulation, fitness: fitness)
+        let chromosome = Chromosome(genes: (1...20).map { $0 })
+        let initialPopulation = Array(repeating: chromosome, count: 10)
+        let configuration = Configuration(populationSize: 20, mutationProbability: 0.2, maxGenerations: 100, parentCount: 10, maxNumberPermutation: 3)
+        let solver = Solver(initialPopulation: initialPopulation, fitness: fitness, configuration: configuration)
        let bestFit = solver.run()
        XCTAssertEqual(bestFit.genes.first, 20)
        XCTAssertEqual(bestFit.genes.last, 1)
@@ -86,7 +87,8 @@ final class WallaceTests: XCTestCase {
         }
         
         let students = (1...9).map({ TestStudent(id: $0, knowsSwift: ($0 % 3) == 0 )})
-        let grouping = Grouping(students: students, factors: [1.0], groupSize: 3)
+        let configuration = Configuration(populationSize: 20, mutationProbability: 0.2, maxGenerations: 100, parentCount: 10, maxNumberPermutation: 3)
+        let grouping = Grouping(students: students, factors: [1.0], groupSize: 3, configuration: configuration)
         let groups = grouping.run()
         XCTAssertEqual(groups.count, 3)
     }
