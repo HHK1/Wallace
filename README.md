@@ -40,10 +40,22 @@ While the generation has not reached the threshold
         Select two parents Among the X and apply crossover
         
     For each offspring:
-        With a probability P, apply a mutation 
+        With a probability p, apply a mutation 
     
     New population is the selected parents and the offsprings
     Generation is incremented
 
 Return the fittest parent
 ``` 
+
+## Contributing 
+
+1. After making modifications, run the tests to make sure the core functionnality is still working
+1. Build the tool with `swift build` 
+1. Test the commands with `.build/debug/Wallace run-all promo2022.csv` 
+
+## Installing
+
+`swift build -c release && cp -f .build/release/Wallace /usr/local/bin/wallace` 
+
+You can now use `wallace` as a standalone CLI.
