@@ -82,6 +82,22 @@ struct HECStudent: Student, Codable {
         return vector
     }
     
+    var juraGroup: Int? {
+       return self.juraGroups?.firstIndex(of: 1.0)
+    }
+    
+    var creaGroup: Int? {
+       return self.creaGroups?.firstIndex(of: 1.0)
+    }
+    
+    var scaleUpGroup: Int? {
+       return self.scaleUpGroups?.firstIndex(of: 1.0)
+    }
+    
+    var redressementGroup: Int? {
+        return self.redressementGroups?.firstIndex(of: 1.0)
+    }
+    
     var description: String {
         var type = ""
         var recruitement = ""
@@ -103,12 +119,12 @@ struct HECStudent: Student, Codable {
         
         let gender = self.isAGirl ? "F" : "M"
         let frenchSpeaker = self.isC2 ? "C2" : "Not C2"
-        
-        let juraGroup = self.juraGroups!.firstIndex(of: 1.0)!
-        let creaGroup = self.creaGroups!.firstIndex(of: 1.0)!
-        let scaleUpGroup = self.scaleUpGroups!.firstIndex(of: 1.0)!
-        let redressementgroup = self.redressementGroups!.firstIndex(of: 1.0)!
-        return "\(self.firstName), \(self.lastName), \(gender), \(recruitement), \(type), \(frenchSpeaker), \(self.mineur.rawValue), \(juraGroup), \(creaGroup), \(scaleUpGroup), \(redressementgroup)"
+        let juraGroupDesc = juraGroup != nil ? "\(juraGroup! + 1)" : "?"
+        let creaGroupDesc = creaGroup != nil ? "\(creaGroup! + 1)" : "?"
+        let scaleUpGroupDesc = scaleUpGroup != nil ? "\(scaleUpGroup! + 1)" : "?"
+        let redressementGroupDesc = redressementGroup != nil ? "\(redressementGroup! + 1)" : "?"
+
+        return "\(self.firstName), \(self.lastName), \(gender), \(recruitement), \(type), \(frenchSpeaker), \(self.mineur.rawValue), \(juraGroupDesc), \(creaGroupDesc), \(scaleUpGroupDesc), \(redressementGroupDesc)"
     }
     
     var shortDescription: String {
