@@ -93,6 +93,18 @@ final class WallaceTests: XCTestCase {
         XCTAssertEqual(groups.count, 3)
     }
     
+    func testRotation() {
+        let groupSize = 4
+        let numberOfRotations = 4
+        let rotations = createGroupRotations(populationSize: 120, groupSize: groupSize, numberOfRotations: numberOfRotations)
+
+        XCTAssertEqual(rotations.count, numberOfRotations)
+        rotations.forEach { (rotation) in
+            XCTAssertEqual(rotation.count, 120 / groupSize)
+            rotation.forEach({ XCTAssertEqual($0.count, groupSize)})
+        }
+    }
+    
     static var allTests = [
         ("testInsertionMutation", testInsertionMutation),
         ("testBasicSolver", testBasicSolver),
