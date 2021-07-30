@@ -20,7 +20,7 @@ class CLILogger: LoggerDelegate {
     
     public func didReceiveLog(log: @autoclosure () -> Any, level: LogLevel) {
           if (level.rawValue > LogLevel.debug.rawValue || debug) {
-              print(log())
+              print("\(level.emoji) \(log())")
           }
     }
 }

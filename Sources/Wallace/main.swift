@@ -167,7 +167,14 @@ func makeGroups(students: [HECStudent], options: Options) -> [Array<HECStudent>]
     let factors: [Float] = [5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0  ]
     let grouping = Grouping(students: students, factors: factors,
                             groupSize: options.groupSize, configuration: configuration)
-    return grouping.run()
+    let groups = grouping.run()
+    let isValid = HECStudent.areGroupsValid(students: students, groups: groups)
+    if (!isValid) {
+        logError("Group is not valid !")
+    } else {
+        logInfo("Group is valid")
+    }
+    return groups
 }
 
 func generateNewStudents(groups: [Array<HECStudent>], keyPath: WritableKeyPath<HECStudent, Optional<Vector>>) -> [HECStudent] {

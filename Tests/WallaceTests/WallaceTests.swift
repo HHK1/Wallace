@@ -78,6 +78,10 @@ final class WallaceTests: XCTestCase {
                 self.knowsSwift = knowsSwift
             }
             
+            static var verificationPaths: [KeyPath<TestStudent, Bool>] {
+                return [\.knowsSwift]
+            }
+            
             func makeAttributeVector(factors: [Float]) -> Vector {
                 return [(self.knowsSwift ? 1 : 0) * factors[0]]
             }
@@ -93,6 +97,7 @@ final class WallaceTests: XCTestCase {
         XCTAssertEqual(groups.count, 3)
     }
     
+    
     func testRotation() {
         let groupSize = 4
         let numberOfRotations = 4
@@ -105,10 +110,61 @@ final class WallaceTests: XCTestCase {
         }
     }
     
+    func testVerification() {
+        struct TestStudent: Student {
+            let id: UInt8
+            let knowsSwift: Bool
+            let knowsC: Bool
+            let knowsObjectiveC: Bool
+            
+            init(id: UInt8, knowsSwift: Bool, knowsC: Bool, knowsObjectiveC: Bool) {
+                self.id = id
+                self.knowsSwift = knowsSwift
+                self.knowsObjectiveC = knowsObjectiveC
+                self.knowsC = knowsC
+            }
+            
+            static var verificationPaths: [KeyPath<TestStudent, Bool>] {
+                return [\.knowsSwift, \.knowsC, \.knowsObjectiveC]
+            }
+            
+            func makeAttributeVector(factors: [Float]) -> Vector {
+                return zip(TestStudent.verificationPaths, factors).map { (path, factor) -> Float in
+                    factor * (self[keyPath: path] ? 1 : 0)
+                }
+            }
+            var description: String {
+                return "\(self.id)"
+            }
+        }
+        
+        let swiftStudent = TestStudent(id: 0, knowsSwift: true, knowsC: false, knowsObjectiveC: false)
+        let cStudent = TestStudent(id: 1, knowsSwift: false, knowsC: true, knowsObjectiveC: false)
+        let objcStudent = TestStudent(id: 2, knowsSwift: false, knowsC: false, knowsObjectiveC: true)
+        let oldIosDev = TestStudent(id:3, knowsSwift: false, knowsC: true, knowsObjectiveC: true)
+        let juniorStudent = TestStudent(id: 4, knowsSwift: false, knowsC: false, knowsObjectiveC: false)
+            
+        let students = [swiftStudent, cStudent, objcStudent, oldIosDev, oldIosDev, juniorStudent]
+        let validGroups = [[swiftStudent, cStudent, objcStudent], [oldIosDev, oldIosDev, juniorStudent]]
+        
+        XCTAssertTrue(TestStudent.areGroupsValid(students: students, groups: validGroups))
+        
+        let students2 = [swiftStudent, swiftStudent, swiftStudent, swiftStudent, cStudent, cStudent, objcStudent, oldIosDev, oldIosDev]
+        let validGroups2 = [[swiftStudent, cStudent, oldIosDev], [swiftStudent, cStudent, objcStudent], [swiftStudent, swiftStudent, oldIosDev]]
+        
+        XCTAssertTrue(TestStudent.areGroupsValid(students: students2, groups: validGroups2))
+        
+        let invalidGroups = [[swiftStudent, swiftStudent , oldIosDev], [cStudent, cStudent, objcStudent], [swiftStudent, swiftStudent, oldIosDev]]
+        let invalidGroups2 = [[swiftStudent, cStudent, oldIosDev], [swiftStudent, oldIosDev, objcStudent], [swiftStudent, swiftStudent, cStudent]]
+        XCTAssertFalse(TestStudent.areGroupsValid(students: students2, groups: invalidGroups))
+        XCTAssertFalse(TestStudent.areGroupsValid(students: students2, groups: invalidGroups2))
+    }
+    
     static var allTests = [
         ("testInsertionMutation", testInsertionMutation),
         ("testBasicSolver", testBasicSolver),
         ("testCrossover", testCrossover),
-        ("testGrouping", testGrouping)
+        ("testGrouping", testGrouping),
+        ("testRotation", testRotation),
     ]
 }

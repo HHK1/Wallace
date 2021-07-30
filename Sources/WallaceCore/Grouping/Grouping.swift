@@ -12,7 +12,8 @@ typealias StudentGroup = [Vector]
 
 public protocol Student {
     var id: UInt8 { get }
-    func makeAttributeVector(factors: [Float]) -> Vector 
+    func makeAttributeVector(factors: [Float]) -> Vector
+    static var verificationPaths: [KeyPath<Self, Bool>] { get }
     var description: String { get }
 }
 
@@ -60,13 +61,58 @@ public class Grouping<StudentType: Student> {
             let solver  = Solver(initialPopulation: makeInitialPopulation(count: configuration.populationSize),
                                  fitness: self.fitness(chromosome:), configuration: configuration)
             
-            let finalChromosome =  solver.run()
+            let finalChromosome = solver.run()
             population.append(finalChromosome)
         }
         let solver  = Solver(initialPopulation: population,
                              fitness: self.fitness(chromosome:), configuration: configuration)
         
+        logInfo("Starting last generation")
         let finalChromosome =  solver.run()
         return finalChromosome.genes.map({ studentsMap[$0]! }).chunked(into: groupSize)
+    }
+}
+
+
+/*
+    Verification
+ */
+
+extension Student {
+    
+    public static func areGroupsValid(students: Array<Self>, groups: [Array<Self>]) -> Bool {
+        guard let groupSize = groups.first?.count else { return false }
+        let numberOfGroups = groups.count
+        
+        let matches = verificationPaths.map { (path) -> Bool in
+            let numberOfStudents = students.filter({ $0[keyPath: path] == true }).count
+            let expectedDistribution = groupDistribution(students: numberOfStudents, numberOfGroups: numberOfGroups, groupSize: groupSize)
+            var distribution = Array.init(repeating: 0, count: groupSize + 1)
+
+            distribution = groups.reduce(distribution) { (acc, group) -> Array<Int> in
+                let matchingStudentsInGroup = group.filter({ $0[keyPath: path ] == true }).count
+                var next = acc
+                next[matchingStudentsInGroup] += 1
+                return next
+            }
+            
+            return expectedDistribution == distribution
+        }
+        return matches.filter({ $0 == false }).isEmpty
+    }
+    
+    /* Given a number of students, the total number of groups and the desired groupSize,
+     return an array representing the distribution of these students in the overall groups */
+    static func groupDistribution(students: Int, numberOfGroups: Int, groupSize: Int) -> Array<Int> {
+        var distribution = Array.init(repeating: 0, count: groupSize + 1)
+        
+        let remainder = students % numberOfGroups
+        let wholePart = students - remainder
+        let studentPerGroup = wholePart / numberOfGroups
+        distribution[studentPerGroup] = numberOfGroups - remainder
+        if remainder != 0 {
+            distribution[studentPerGroup + 1] = remainder
+        }
+        return distribution
     }
 }

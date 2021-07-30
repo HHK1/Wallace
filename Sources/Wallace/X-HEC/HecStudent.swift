@@ -56,8 +56,12 @@ struct HECStudent: Student, Codable {
         self.mineur = Mineur(rawValue: row[6])!
     }
     
+    static var verificationPaths: [KeyPath<HECStudent, Bool>] {
+        return [\.isAGirl, \.isFromHEC, \.isFromPolytechnique, \.isFromOther, \.isBusiness, \.isEngineer, \.isOther, \.isC2]
+    }
+    
     func makeAttributeVector(factors: [Float]) -> Vector {
-        let paths: [KeyPath<HECStudent, Bool>]  = [\.isAGirl, \.isFromHEC, \.isFromPolytechnique, \.isFromOther, \.isBusiness, \.isEngineer, \.isOther, \.isC2]
+        let paths = HECStudent.verificationPaths
         assert(factors.count == paths.count, "Provide a factor for each dimension")
         var vector = zip(paths, factors).map { (path, factor) -> Float in
             factor * (self[keyPath: path] ? 1 : 0)
@@ -121,3 +125,5 @@ struct StudentName: Codable {
     let firstName:  String
     let LastName: String
 }
+
+

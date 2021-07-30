@@ -13,6 +13,16 @@ public enum LogLevel: Int {
     case info
     case warning
     case error
+    
+    public var emoji: String {
+        switch self {
+        case .verbose: return "💜"
+        case .debug: return "💙"
+        case .info: return "💚"
+        case .warning: return "💛"
+        case .error: return "❤️"
+        }
+    }
 }
 
 public protocol LoggerDelegate: class {
