@@ -10,7 +10,7 @@ import Foundation
 func parseStudentFile(data: String) -> Array<HECStudent> {
     let rows = data.components(separatedBy: .newlines).filter({ $0 != "" })
     return rows.enumerated().map { (index, row) -> HECStudent in
-        return HECStudent(id: UInt8(index), row: row.components(separatedBy: ";"))
+        return HECStudent(id: UInt8(index), row: row.components(separatedBy: ";"), numberOfStudents: rows.count)
     }
 }
 

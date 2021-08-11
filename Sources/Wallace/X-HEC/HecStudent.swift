@@ -30,12 +30,14 @@ struct HECStudent: Student, Codable {
     let isC2: Bool
     let mineur: Mineur
     
-    var juraGroups: Vector?
-    var creaGroups: Vector?
-    var redressementGroups: Vector?
-    var scaleUpGroups: Vector?
+    var studentsMet: Array<Bool>
     
-    init(id: UInt8, row: [String]) {
+    var juraGroup: Int?
+    var creaGroup: Int?
+    var scaleUpGroup: Int?
+    var redressementGroup: Int?
+    
+    init(id: UInt8, row: [String], numberOfStudents: Int) {
         self.id = id
         self.firstName = row[1].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
         self.lastName = row[0].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
@@ -54,6 +56,7 @@ struct HECStudent: Student, Codable {
         
         self.isC2 = row[5] == "C2 Proficient (mother tongue)"
         self.mineur = Mineur(rawValue: row[6])!
+        self.studentsMet = Array<Bool>(repeating: false, count: numberOfStudents)
     }
     
     static var verificationPaths: [KeyPath<HECStudent, Bool>] {
@@ -69,33 +72,8 @@ struct HECStudent: Student, Codable {
         
         let minorDimension: Float = self.mineur == Mineur.DeepTech ? 1.0 : 0
         vector.append(minorDimension)
-        
-        if let juraGroups = juraGroups {
-            vector.append(contentsOf: juraGroups)
-        }
-        if let creaGroups = creaGroups {
-            vector.append(contentsOf: creaGroups)
-        }
-        if let scaleUpGroups = scaleUpGroups {
-            vector.append(contentsOf: scaleUpGroups)
-        }
+        vector.append(contentsOf: studentsMet.map({ $0 == true ? 5.0 : 0 }))
         return vector
-    }
-    
-    var juraGroup: Int? {
-       return self.juraGroups?.firstIndex(of: 1.0)
-    }
-    
-    var creaGroup: Int? {
-       return self.creaGroups?.firstIndex(of: 1.0)
-    }
-    
-    var scaleUpGroup: Int? {
-       return self.scaleUpGroups?.firstIndex(of: 1.0)
-    }
-    
-    var redressementGroup: Int? {
-        return self.redressementGroups?.firstIndex(of: 1.0)
     }
     
     var description: String {
@@ -134,12 +112,64 @@ struct HECStudent: Student, Codable {
     static var csvTitle: String {
         return "First Name, Last Name, Gender, Recruitement, Category, French Speaker, Mineur, Groupe Jura, Groupe Créa, Groupe Scale Up, Groupe Redressement \n"
     }
+    
+    /*
+     Based on which groups have already been set, compute the number of the **current** session. So if no groups have been
+     set, the session number is the one for Jura, so 1
+     */
+    var sessionNumber: Int {
+        if self.juraGroup == nil {
+            return 1
+        } else if self.creaGroup == nil {
+            return 2
+        } else if self.scaleUpGroup == nil {
+            return 3
+        } else if self.redressementGroup == nil {
+            return 4
+        } else {
+            return -1
+        }
+    }
 }
 
 struct StudentName: Codable {
-    
     let firstName:  String
     let LastName: String
 }
 
+extension HECStudent {
+    
+    func hasMetEnoughStudents(groupSize: Int) -> Bool {
+        let expectedStudentMet = sessionNumber * (groupSize - 1)
+        let numberOfStudentsMet = self.studentsMet.filter({ $0 == true }).count
+        return expectedStudentMet == numberOfStudentsMet
+    }
+    
+    static func isSolutionValid(students: Array<Self>, groups: [Array<Self>]) -> Bool {
+        guard let groupSize = groups.first?.count else { return false }
+        let areGroupsValid = HECStudent.areGroupsValid(students: students, groups: groups)
+        let newStudents = HECStudent.updateStudentsMet(groups: groups)
+        let invalidStudents = newStudents.filter({ !$0.hasMetEnoughStudents(groupSize: groupSize) })
+        let areGroupsDifferent = invalidStudents.isEmpty
+        return areGroupsValid && areGroupsDifferent
+    }
+    
+    static func updateStudentsMet(groups: [Array<HECStudent>]) -> [HECStudent] {
+
+        return groups.enumerated().reduce([], { (newStudents, entry) -> [HECStudent] in
+            let (_, group) = entry
+           
+            let groupStudents = group.map { (student) -> HECStudent in
+                var studentCopy = student
+                var updatedStudentsMet = studentCopy.studentsMet
+                group.filter({ $0.id != student.id }).forEach({ updatedStudentsMet[Int($0.id)] = true })
+                studentCopy.studentsMet = updatedStudentsMet
+                return studentCopy
+            }
+            var next = newStudents
+            next.append(contentsOf: groupStudents)
+            return next
+        })
+    }
+}
 

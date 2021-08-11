@@ -9,9 +9,9 @@ import Foundation
 
 
 // An actual group of members from the population
-typealias Group = Array<Int>
+public typealias Group = Array<Int>
 // A solution to a grouping problem, i.e a group of group
-typealias Rotation = Array<Group>
+public typealias Rotation = Array<Group>
 // A map indexed by the Id of the individual to keep the encounters of each individual after all the computed rotations
 typealias Encounters = Array<Array<Int>>
 /*
@@ -23,11 +23,11 @@ the same individuals twice.
 There is no guarantee that a solution exists depending on the parameters size. This is a greedy algorithm that will verify
 the validity of solutions and will
 */
-func createGroupRotations(populationSize: Int, groupSize: Int, numberOfRotations: Int) -> Array<Rotation> {
+public func createGroupRotations(populationSize: Int, groupSize: Int, numberOfRotations: Int) -> Array<Rotation> {
     
     let population = Array(0...populationSize - 1)
     var rotations: Array<Rotation> = Array.init(repeating: [], count: numberOfRotations)
-        
+    print(populationSize, groupSize, numberOfRotations)
     // The list of individuals that each person has already met. Indexed by the ID of the individual.
     var encounters: Encounters = Array.init(repeating: [], count: populationSize)
     let firstRotation: Rotation = population.chunked(into: groupSize)
@@ -43,7 +43,7 @@ func createGroupRotations(populationSize: Int, groupSize: Int, numberOfRotations
         encounters = updateEncounters(encounters: encounters, rotation: rotation)
         rotations[i] = rotation
     }
-    print(encounters)
+    print(rotations)
     return rotations
 }
 

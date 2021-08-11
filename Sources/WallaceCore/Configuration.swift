@@ -4,9 +4,9 @@ public class Configuration {
         
     let populationSize: Int
     let mutationProbability: Float
-    let maxGenerations: Int
     let parentCount: Int
     let maxNumberPermutation: Int
+    let maxGenerations: Int
     
     public init(populationSize: Int, mutationProbability: Float,
                 maxGenerations: Int, parentCount: Int, maxNumberPermutation: Int) {

@@ -22,7 +22,7 @@ public enum LogLevel: Int {
         case .warning: return "💛"
         case .error: return "❤️"
         }
-    }
+    }   
 }
 
 public protocol LoggerDelegate: class {

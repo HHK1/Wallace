@@ -12,9 +12,10 @@ typealias StudentGroup = [Vector]
 
 public protocol Student {
     var id: UInt8 { get }
+    var description: String { get }
     func makeAttributeVector(factors: [Float]) -> Vector
     static var verificationPaths: [KeyPath<Self, Bool>] { get }
-    var description: String { get }
+    static func isSolutionValid(students: Array<Self>, groups: [Array<Self>]) -> Bool
 }
 
 /**
@@ -26,14 +27,14 @@ public protocol Student {
     a specific dimension
  */
 public class Grouping<StudentType: Student> {
-    private let students: [UInt8]
+    private let students: [StudentType]
     private let studentsMap: Dictionary<UInt8, StudentType>
     private let vectorsMap: Dictionary<UInt8, Vector>
     private let groupSize: Int
     private let configuration: Configuration
     
     public init(students: [StudentType], factors: [Float], groupSize: Int, configuration: Configuration) {
-        self.students = students.map({ $0.id })
+        self.students = students
         self.studentsMap = Dictionary(uniqueKeysWithValues: students.map{ ($0.id, $0)})
         self.vectorsMap = Dictionary(uniqueKeysWithValues: students.map{ ($0.id, $0.makeAttributeVector(factors: factors))})
         self.groupSize = groupSize
@@ -41,7 +42,7 @@ public class Grouping<StudentType: Student> {
     }
     
     private func makeInitialPopulation(count: Int) -> Array<Chromosome> {
-        return (0...count).map({ _ in Chromosome(genes: self.students.shuffled()) })
+        return (0...count).map({ _ in Chromosome(genes: self.students.map({ $0.id }).shuffled()) })
     }
     
     private func fitness(chromosome: Chromosome) -> Float {
@@ -56,23 +57,43 @@ public class Grouping<StudentType: Student> {
     }
     
     public func run() -> Array<Array<StudentType>> {
+        
+        func shouldStopReproduction(solution: Chromosome, generation: Int) -> Bool {
+            if (generation <= configuration.maxGenerations) { return false }
+            let groups = solution.genes.map({ studentsMap[$0]! }).chunked(into: groupSize)
+            return StudentType.isSolutionValid(students: self.students, groups: groups)
+        }
+        let initialPopulation = generateInitialPopulation()
+        let solver  = Solver(initialPopulation: initialPopulation,
+                             fitness: self.fitness(chromosome:),
+                             configuration: configuration,
+                             shouldStopReproduction: shouldStopReproduction)
+        
+        logInfo("Starting last generation")
+        let finalChromosome = solver.run()
+        return finalChromosome.genes.map({ studentsMap[$0]! }).chunked(into: groupSize)
+    }
+    
+    private func generateInitialPopulation() -> Array<Chromosome> {
         var population: Array<Chromosome> = []
+        
+        func shouldStopReproduction(solution: Chromosome, generation: Int) -> Bool {
+            return generation == configuration.maxGenerations / configuration.parentCount
+        }
+        
         for _ in 0...configuration.parentCount {
-            let solver  = Solver(initialPopulation: makeInitialPopulation(count: configuration.populationSize),
-                                 fitness: self.fitness(chromosome:), configuration: configuration)
+            let initialPopulation = makeInitialPopulation(count: configuration.populationSize)
+            let solver  = Solver(initialPopulation: initialPopulation,
+                                 fitness: self.fitness,
+                                 configuration: configuration,
+                                 shouldStopReproduction: shouldStopReproduction)
             
             let finalChromosome = solver.run()
             population.append(finalChromosome)
         }
-        let solver  = Solver(initialPopulation: population,
-                             fitness: self.fitness(chromosome:), configuration: configuration)
-        
-        logInfo("Starting last generation")
-        let finalChromosome =  solver.run()
-        return finalChromosome.genes.map({ studentsMap[$0]! }).chunked(into: groupSize)
+        return population
     }
 }
-
 
 /*
     Verification
@@ -95,9 +116,12 @@ extension Student {
                 next[matchingStudentsInGroup] += 1
                 return next
             }
-            
-            return expectedDistribution == distribution
+            let isPathValid = expectedDistribution == distribution
+            logVerbose("Path \(path.hashValue) is valid: \(isPathValid)")
+            logVerbose("Distribution \(distribution), expected: \(expectedDistribution)")
+            return isPathValid
         }
+        
         return matches.filter({ $0 == false }).isEmpty
     }
     

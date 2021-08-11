@@ -11,38 +11,41 @@ struct Solver {
     
     let initialPopulation: Array<Chromosome>
     let fitness: (_ chromosome: Chromosome) -> Float
+    let shouldStopReproduction: (_ solution: Chromosome, _ generation: Int) -> Bool
     let configuration: Configuration
     let mutationDistribution: [Double]
     
     init(initialPopulation: Array<Chromosome>,
          fitness: @escaping (_ chromosome: Chromosome) -> Float,
-         configuration: Configuration) {
+         configuration: Configuration,
+         shouldStopReproduction:  @escaping (_ solution: Chromosome, _ generation: Int) -> Bool) {
         
         self.initialPopulation = initialPopulation
         self.fitness = fitness
         self.configuration = configuration
+        self.shouldStopReproduction = shouldStopReproduction
         self.mutationDistribution = poissonDistribution(lambda: 1.0, max: configuration.maxNumberPermutation)
     }
     
     func run() -> Chromosome {
         var population = initialPopulation
         var generation = 0
+        var parents = selectParents(population: population)
+        var bestFit = parents.first!
+        logInfo("Running solver...")
         
-        logInfo("Starting solver...")
-        
-        while generation < configuration.maxGenerations {
+        while !shouldStopReproduction(bestFit, generation) {
             logDebug("Starting generation \(generation)")
-            var parents = selectParents(population: population)
             let offsprings = createOffsprings(parents: parents)
             let mutatedOffsprings = generateMutations(offsprings: offsprings)
             parents.append(contentsOf: mutatedOffsprings)
             population = parents
             generation += 1
+            parents = selectParents(population: population)
+            bestFit = parents.first!
         }
         
-        logInfo("Stopped iteration after \(generation) generations")
-        let bestFit = selectParents(population: population).first!
-        logInfo("Best fit is: \(self.fitness(bestFit))")
+        logInfo("Stopped iteration after \(generation) generations, best fit: \(self.fitness(bestFit))")
         return bestFit
     }
     

@@ -36,11 +36,14 @@ final class WallaceTests: XCTestCase {
            let last = Int(chromosome.genes.last!)
            return Float(first - last)
        }
-        
+       
+        func shouldStopReproduction(solution: Chromosome, generation: Int) -> Bool {
+            return generation == 100
+        }
         let chromosome = Chromosome(genes: (1...20).map { $0 })
         let initialPopulation = Array(repeating: chromosome, count: 10)
         let configuration = Configuration(populationSize: 20, mutationProbability: 0.2, maxGenerations: 100, parentCount: 10, maxNumberPermutation: 3)
-        let solver = Solver(initialPopulation: initialPopulation, fitness: fitness, configuration: configuration)
+        let solver = Solver(initialPopulation: initialPopulation, fitness: fitness, configuration: configuration, shouldStopReproduction: shouldStopReproduction)
        let bestFit = solver.run()
        XCTAssertEqual(bestFit.genes.first, 20)
        XCTAssertEqual(bestFit.genes.last, 1)
@@ -70,6 +73,10 @@ final class WallaceTests: XCTestCase {
     func testGrouping() {
         
         struct TestStudent: Student {
+            static func isSolutionValid(students: Array<TestStudent>, groups: [Array<TestStudent>]) -> Bool {
+                return true
+            }
+            
             let id: UInt8
             let knowsSwift: Bool
             
@@ -126,6 +133,10 @@ final class WallaceTests: XCTestCase {
             
             static var verificationPaths: [KeyPath<TestStudent, Bool>] {
                 return [\.knowsSwift, \.knowsC, \.knowsObjectiveC]
+            }
+            
+            static func isSolutionValid(students: Array<TestStudent>, groups: [Array<TestStudent>]) -> Bool {
+                return true
             }
             
             func makeAttributeVector(factors: [Float]) -> Vector {
