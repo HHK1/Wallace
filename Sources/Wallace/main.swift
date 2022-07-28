@@ -124,22 +124,22 @@ func makeJuraGroups(students: [HECStudent], options: Options) throws -> [HECStud
 
 
 func makeCreaGroups(students: [HECStudent], options: Options) throws -> [HECStudent] {
-//    let highTouchStudents = students.filter({ $0.mineur == Mineur.HighTouch })
-//    let deepTechStudents = students.filter({ $0.mineur == Mineur.DeepTech })
-//
-//    let highTouchGroups = makeGroups(students: highTouchStudents, options: options)
-//    let deepTechGroups = makeGroups(students: deepTechStudents, options: options)
-//
-//    var groups = highTouchGroups
-//    groups.append(contentsOf: deepTechGroups)
-//    let updatedStudents = generateNewStudents(groups: groups, keyPath: \.creaGroup)
-//    try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "crea.txt")
-//    return updatedStudents
-    
-    let groups = makeGroups(students: students, options: options)
+    let highTouchStudents = students.filter({ $0.mineur == Mineur.HighTouch })
+    let deepTechStudents = students.filter({ $0.mineur == Mineur.DeepTech })
+
+    let highTouchGroups = makeGroups(students: highTouchStudents, options: options)
+    let deepTechGroups = makeGroups(students: deepTechStudents, options: options)
+
+    var groups = highTouchGroups
+    groups.append(contentsOf: deepTechGroups)
     let updatedStudents = generateNewStudents(groups: groups, keyPath: \.creaGroup)
     try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "crea.txt")
     return updatedStudents
+    
+//    let groups = makeGroups(students: students, options: options)
+//    let updatedStudents = generateNewStudents(groups: groups, keyPath: \.creaGroup)
+//    try saveGroupsAndStudents(groups: groups, students: updatedStudents, filename: "crea.txt")
+//    return updatedStudents
 }
 
 func makeScaleUpGroups(students: [HECStudent], options: Options) throws -> [HECStudent] {

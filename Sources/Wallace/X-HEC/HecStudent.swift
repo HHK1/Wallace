@@ -15,8 +15,7 @@ enum Mineur: String, Codable {
         
 struct HECStudent: Student, Codable {
     let id: UInt8
-    let firstName: String
-    let lastName: String
+    let fullName: String
     let isAGirl: Bool
     
     let isFromHEC: Bool
@@ -39,11 +38,10 @@ struct HECStudent: Student, Codable {
     
     init(id: UInt8, row: [String], numberOfStudents: Int) {
         self.id = id
-        self.firstName = row[1].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
-        self.lastName = row[0].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
-        self.isAGirl = row[2] == "F"
+        self.fullName = row[0].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
+        self.isAGirl = row[1] == "F"
         
-        let recruitement = row[3]
+        let recruitement = row[2]
         self.isFromHEC = recruitement == "HEC GE"
         self.isFromPolytechnique = recruitement == "X"
         self.isFromOther = recruitement == "MSc"
@@ -54,8 +52,8 @@ struct HECStudent: Student, Codable {
         self.isEngineer = category == "Engineer"
         self.isOther = category == "Other"
         
-        self.isC2 = row[5] == "C2 Proficient (mother tongue)"
-        self.mineur = Mineur(rawValue: row[6])!
+        self.isC2 = row[3] == "C2 Proficient (mother tongue)"
+        self.mineur = Mineur(rawValue: row[5])!
         self.studentsMet = Array<Bool>(repeating: false, count: numberOfStudents)
     }
     
@@ -102,15 +100,15 @@ struct HECStudent: Student, Codable {
         let scaleUpGroupDesc = scaleUpGroup != nil ? "\(scaleUpGroup! + 1)" : "?"
         let redressementGroupDesc = redressementGroup != nil ? "\(redressementGroup! + 1)" : "?"
 
-        return "\(self.firstName), \(self.lastName), \(gender), \(recruitement), \(type), \(frenchSpeaker), \(self.mineur.rawValue), \(juraGroupDesc), \(creaGroupDesc), \(scaleUpGroupDesc), \(redressementGroupDesc)"
+        return "\(self.id), \(self.fullName), \(gender), \(recruitement), \(type), \(frenchSpeaker), \(self.mineur.rawValue), \(juraGroupDesc), \(creaGroupDesc), \(scaleUpGroupDesc), \(redressementGroupDesc)"
     }
     
     var shortDescription: String {
-        return "\(self.firstName) \(self.lastName)"
+        return "\(self.fullName)"
     }
     
     static var csvTitle: String {
-        return "First Name, Last Name, Gender, Recruitement, Category, French Speaker, Mineur, Groupe Jura, Groupe Créa, Groupe Scale Up, Groupe Redressement \n"
+        return "Id, Full Name, Gender, Recruitement, Category, French Speaker, Mineur, Groupe Jura, Groupe Créa, Groupe Scale Up, Groupe Redressement \n"
     }
     
     /*
@@ -130,11 +128,6 @@ struct HECStudent: Student, Codable {
             return -1
         }
     }
-}
-
-struct StudentName: Codable {
-    let firstName:  String
-    let LastName: String
 }
 
 extension HECStudent {
