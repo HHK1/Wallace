@@ -108,20 +108,24 @@ final class HECStudent: Student, Codable {
         let mineur = self.isDeepTech ? Mineur.deepTech.rawValue : Mineur.highTouch.rawValue
         let frenchSpeaker = self.isC2 ? "C2" : "Not C2"
         
+        var components: Array<String> = ["\(id)", firstName, lastName, gender, recruitement, type, frenchSpeaker, mineur]
+
         // Historically the group numbers start at 100
-        let workshopDesc = Workshop.allCases.map({ groups[$0] == nil ? "?" : "\(groups[$0]! + HECStudent.groupOffset)"}).joined(separator: ", ")
-        let juraHikeGroupsDesc = hikeGroups.map({ "\($0?.description ?? "?")" }).joined(separator: ", ")
+        let workshopDesc = Workshop.allCases.map({ groups[$0] == nil ? "?" : "\(groups[$0]! + HECStudent.groupOffset)"})
+        let juraHikeGroupsDesc = hikeGroups.map({ "\($0?.description ?? "?")" })
         
-        return "\(id), \(firstName), \(lastName), \(gender), \(recruitement), \(type), \(frenchSpeaker), \(mineur), \(workshopDesc), \(juraHikeGroupsDesc)"
+        components.append(contentsOf: workshopDesc)
+        components.append(contentsOf: juraHikeGroupsDesc)
+
+        return components.joined(separator: ";")
     }
-    
     
     var shortDescription: String {
         return "\(self.firstName) \(self.lastName)"
     }
     
     static var csvTitle: String {
-        return "Id, First Name, Last Name, Gender, Recruitement, Category, French Speaker, Mineur, Groupe Jura,  Groupe Créa, Groupe Scale Up, Groupe Redressement, Groupe Marche Jura Jour 1, Groupe Marche Jura Jour 2, Groupe Marche Jura Jour 3, Groupe Marche Jura Jour 4 \n"
+        return ["Id", "First Name", "Last Name", "Gender", "Recruitement", "Category", "French Speaker","Mineur", "Groupe Jura",  "Groupe Créa", "Groupe Scale Up", "Groupe Redressement", "Groupe Marche Jura Jour 1", "Groupe Marche Jura Jour 2", "Groupe Marche Jura Jour 3", "Groupe Marche Jura Jour 4"].joined(separator: ";") + "\n"
     }
 }
 
