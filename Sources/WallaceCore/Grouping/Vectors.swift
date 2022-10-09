@@ -16,6 +16,9 @@ func calculateMeanVector(vectors: [Vector]) -> Vector {
     return Surge.div(sum, Float(vectors.count))
 }
 
+/*
+ Compute the cumulated distance between each vector of the collection
+ */
 func calculateDistance(vectors: [Vector]) -> Float {
     var sum: Float = 0
     for i in 0..<(vectors.count - 1) {
@@ -25,6 +28,3 @@ func calculateDistance(vectors: [Vector]) -> Float {
     }
     return sum
 }
-
-
-

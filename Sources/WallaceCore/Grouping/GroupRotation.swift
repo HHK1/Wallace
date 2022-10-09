@@ -27,7 +27,6 @@ public func createGroupRotations(populationSize: Int, groupSize: Int, numberOfRo
     
     let population = Array(0...populationSize - 1)
     var rotations: Array<Rotation> = Array.init(repeating: [], count: numberOfRotations)
-    print(populationSize, groupSize, numberOfRotations)
     // The list of individuals that each person has already met. Indexed by the ID of the individual.
     var encounters: Encounters = Array.init(repeating: [], count: populationSize)
     let firstRotation: Rotation = population.chunked(into: groupSize)
@@ -43,7 +42,6 @@ public func createGroupRotations(populationSize: Int, groupSize: Int, numberOfRo
         encounters = updateEncounters(encounters: encounters, rotation: rotation)
         rotations[i] = rotation
     }
-    print(rotations)
     return rotations
 }
 

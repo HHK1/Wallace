@@ -22,7 +22,18 @@ public enum LogLevel: Int {
         case .warning: return "💛"
         case .error: return "❤️"
         }
-    }   
+    }
+
+    public init(value: String) {
+        switch value {
+        case "verbose": self = .verbose
+        case "debug": self = .debug
+        case "info": self = .info
+        case "warning": self = .warning
+        case "error": self = .error
+        default: self = .info
+        }
+    }
 }
 
 public protocol LoggerDelegate: class {
