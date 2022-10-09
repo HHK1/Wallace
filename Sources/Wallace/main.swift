@@ -29,7 +29,7 @@ struct Wallace: ParsableCommand {
     static let configuration = CommandConfiguration(abstract: "Group students for each activity",
                                                     subcommands: [Init.self, JuraGroups.self, JuraHikeGroups.self,
                                                                   CreaGroups.self, RedressementGroups.self,
-                                                                  ScaleUpGroups.self, ExportStudents.self, RunAll.self])
+                                                                  ScaleUpGroups.self, ExportStudents.self, RunAll.self, Remove.self])
 
     struct Init: ParsableCommand {
         @Argument(help: "The input file url containing the students")
@@ -109,6 +109,23 @@ struct Wallace: ParsableCommand {
             try makeJuraHikeRotation(students: students)
             try exportAll()
         }
+    }
+    
+    struct Remove: ParsableCommand {
+        
+        @Argument(help: "The workshop to remove.")
+        var workshop: String
+        
+        func run() throws {
+            let students = try decodeStudents()
+            guard let worshopValue = Workshop(rawValue: workshop) else {
+                logError("Invalid workshop \(workshop)")
+                return
+            }
+            students.forEach({ $0.groups[worshopValue] = nil; $0.studentsMetByWorshop[worshopValue] = nil; })
+            try encodeStudents(students: students)
+        }
+        
     }
     
     private static func initialize(url: String, options: Options) throws {
