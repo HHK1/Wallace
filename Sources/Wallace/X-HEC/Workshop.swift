@@ -60,10 +60,6 @@ enum Workshop: String, Codable, CaseIterable {
             var factors = defaultFactors
             factors.remove(at: factors.index(forKey: \HECStudent.isDeepTech)!)
             return factors
-        case .redressement:
-            var factors = defaultFactors
-            factors.remove(at: factors.index(forKey: \HECStudent.isC2)!)
-            return factors
         default:
             return defaultFactors
         }
