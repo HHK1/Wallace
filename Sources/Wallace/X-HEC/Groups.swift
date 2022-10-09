@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import WallaceCore
 
 enum GroupError: Error {
     case studentHasGroupMissing
@@ -28,6 +29,9 @@ func getGroups(from students: [HECStudent], for workshop: Workshop) throws -> [[
     return groups
 }
 
+/**
+    Given groups generated for a workshop, return updated students with the corresponding workshop informations (group ID and students met) properly set.
+ */
 func updateStudents(with groups: [Array<HECStudent>], for workshop: Workshop) -> [HECStudent] {
 
     return groups.enumerated().reduce([], { (newStudents, entry) -> [HECStudent] in
@@ -42,4 +46,17 @@ func updateStudents(with groups: [Array<HECStudent>], for workshop: Workshop) ->
         next.append(contentsOf: groupStudents)
         return next
     })
+}
+
+func updateStudents(students: [HECStudent], with rotations: [Rotation], groups: Array<[HECStudent]>) -> [HECStudent] {
+    rotations.enumerated().forEach({ (rotationIndex, rotation) in
+        rotation.enumerated().forEach({ (index, groupOfGroups) in
+            let hikeGroupId = index + 1
+            groupOfGroups.forEach { (groupId) in
+                let groupOfStudents = groups[groupId]
+                groupOfStudents.forEach({ $0.hikeGroups[rotationIndex] = hikeGroupId })
+            }
+        })
+    })
+    return students
 }

@@ -70,7 +70,6 @@ func exportStudents(students: [HECStudent]) throws {
 
 /*
  Given a rotation, export a single file to `fileName` with a text giving the list of students for each day
- TODO: format sucks, export into a CSV
  */
 func exportRotation(fileName: String, rotation: Rotation, groups: Array<[HECStudent]>) throws {
     let rotationString = rotation.enumerated().reduce("", { (stringData, enumerated) -> String in
@@ -78,7 +77,7 @@ func exportRotation(fileName: String, rotation: Rotation, groups: Array<[HECStud
         let result = stringData.appending("Groupe de marche \(index + 1) \n")
         let students = groupsofGroups.reduce("") { (students, groupId) -> String in
             let group = groups[groupId]
-            return students + "Groupe \(groupId + 101): " + group.map({ $0.shortDescription}).joined(separator: ", ") + "\n"
+            return students + "Groupe \(groupId + HECStudent.groupOffset): " + group.map({ $0.shortDescription}).joined(separator: ", ") + "\n"
         }
         return result.appending(students).appending("\n \n")
     })

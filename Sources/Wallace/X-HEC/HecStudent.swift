@@ -34,7 +34,10 @@ final class HECStudent: Student, Codable {
     // For vector manipulation or verification, the studentsMet contain all the students.
     var studentsMetByWorshop: Dictionary<Workshop, Array<UInt8>> = Dictionary()
     
-    // TODO: students should also hold the hike groups
+    /**
+     The hike groups for Jura. Each element is a hike day, and each value represents the "meta" group number.
+    */
+    var hikeGroups: Array<Int?> = Array(repeating: nil, count: HikeJura.numberOfRotations)
 
     var studentsMet: Array<UInt8> {
         return studentsMetByWorshop.values.reduce(into: []) { (all, workshop) in
@@ -42,6 +45,10 @@ final class HECStudent: Student, Codable {
         }
     }
     
+    /**
+     Number of the first group. Historically groups started prefixed with 100
+     */
+    static var groupOffset: Int = 101
     static var promoSize: Int = 120
     
     
@@ -102,12 +109,10 @@ final class HECStudent: Student, Codable {
         let frenchSpeaker = self.isC2 ? "C2" : "Not C2"
         
         // Historically the group numbers start at 100
-        let juraGroupDesc = groups[.jura] != nil ? "\(groups[.jura]! + 101)" : "?"
-        let creaGroupDesc = groups[.crea] != nil ? "\(groups[.crea]! + 101)" : "?"
-        let scaleUpGroupDesc = groups[.scaleUp] != nil ? "\(groups[.scaleUp]! + 101)" : "?"
-        let redressementGroupDesc = groups[.redressement] != nil ? "\(groups[.redressement]! + 101)" : "?"
-
-        return "\(self.id), \(self.firstName), \(self.lastName), \(gender), \(recruitement), \(type), \(frenchSpeaker), \(mineur), \(juraGroupDesc), \(creaGroupDesc), \(scaleUpGroupDesc), \(redressementGroupDesc)"
+        let workshopDesc = Workshop.allCases.map({ groups[$0] == nil ? "?" : "\(groups[$0]! + HECStudent.groupOffset)"}).joined(separator: ", ")
+        let juraHikeGroupsDesc = hikeGroups.map({ "\($0?.description ?? "?")" }).joined(separator: ", ")
+        
+        return "\(id), \(firstName), \(lastName), \(gender), \(recruitement), \(type), \(frenchSpeaker), \(mineur), \(workshopDesc), \(juraHikeGroupsDesc)"
     }
     
     
@@ -116,7 +121,7 @@ final class HECStudent: Student, Codable {
     }
     
     static var csvTitle: String {
-        return "Id, First Name, Last Name, Gender, Recruitement, Category, French Speaker, Mineur, Groupe Jura,  Groupe Créa, Groupe Scale Up, Groupe Redressement \n"
+        return "Id, First Name, Last Name, Gender, Recruitement, Category, French Speaker, Mineur, Groupe Jura,  Groupe Créa, Groupe Scale Up, Groupe Redressement, Groupe Marche Jura Jour 1, Groupe Marche Jura Jour 2, Groupe Marche Jura Jour 3, Groupe Marche Jura Jour 4 \n"
     }
 }
 

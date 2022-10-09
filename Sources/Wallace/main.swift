@@ -155,7 +155,8 @@ struct Wallace: ParsableCommand {
     private static func makeJuraHikeRotation(students: [HECStudent]) throws {
         let groups = try getGroups(from: students, for: .jura)
         let rotations = createGroupRotations(populationSize: groups.count, groupSize: HikeJura.groupSize, numberOfRotations: HikeJura.numberOfRotations)
-        // TODO: the rotations export format sucks
+        let updatedStudents = updateStudents(students: students, with: rotations, groups: groups)
+        try encodeStudents(students: updatedStudents)
         for (index, rotation) in rotations.enumerated() {
             try exportRotation(fileName: "Jura jour \(index + 1).txt", rotation: rotation, groups: groups)
         }
