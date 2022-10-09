@@ -54,8 +54,8 @@ final class HECStudent: Student, Codable {
     
     init(id: UInt8, row: [String]) {
         self.id = id
-        self.firstName = row[1].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
-        self.lastName = row[0].trimmingCharacters(in: CharacterSet.init(charactersIn: " "))
+        self.firstName = row[1].trim()
+        self.lastName = row[0].trim()
         self.isAGirl = row[2] == "F"
         
         let recruitement = row[3]
