@@ -124,7 +124,7 @@ public class Grouping<StudentType: Student> {
     }
     
     private func makeChromosomeSortedByHomogeneity() -> Chromosome {
-        guard let sortFunctions = self.homogeneousSortFunctions else {
+        guard let sortFunctions = self.homogeneousSortFunctions, !sortFunctions.isEmpty else {
             return Chromosome(genes: self.students.map({ $0.id }).shuffled())
         }
                     
@@ -157,7 +157,6 @@ public class Grouping<StudentType: Student> {
     }
     
     public func run() -> Array<Array<StudentType>> {
-        
         func validateSolution(generation: Int, parents: Set<Chromosome>) -> Chromosome? {
             if (generation <= configuration.maxGenerations) { return nil }
             guard let verify = verify else { return parents.first }

@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import ArgumentParser
 
-enum EncodedFactor: String, Codable {
+enum EncodedFactor: String, Codable, ExpressibleByArgument {
     case gender
     case school
     case type
@@ -66,9 +67,18 @@ struct Workshop: Codable, CustomStringConvertible {
     }
     
     var description: String {
-        return self.name
+        var factorsDesc = self.rawHeterogeneousFactors.keys.map({ "\($0): \(self.rawHeterogeneousFactors[$0]!)" })
+        let heteroDesc = " - Heterogeneous factors: \n    • \(factorsDesc.joined(separator: "\n    • "))\n"
+        var homoDesc: String = ""
+        if let rawHomogeneousFactors = rawHomogeneousFactors, !rawHomogeneousFactors.isEmpty {
+            factorsDesc = rawHomogeneousFactors.keys.map({ "\($0): \(rawHomogeneousFactors[$0]!)" })
+            homoDesc = " - Homogeneous factors: \n    • \(factorsDesc.joined(separator: "\n    • "))\n"
+        }
+        let hikeDesc = hikeConfiguration != nil ? " - Hike configuration: \n\(hikeConfiguration!.description)" : ""
+        return "Name: \(self.name)\n - Group size: \(groupSize)\n\(heteroDesc)\(homoDesc)\(hikeDesc)"
     }
     
+   
     static var allValues: Array<Workshop> = load()
     
     private static func load() -> Array<Workshop> {
@@ -99,10 +109,14 @@ struct Workshop: Codable, CustomStringConvertible {
 /**
     Configuration for the "groupes de marche" after the Jura workshop.
  */
-struct HikeConfiguration: Codable {
+struct HikeConfiguration: Codable, CustomStringConvertible {
     /** Size of each group. In that case a group is a group of groups of students. */
     var groupSize: Int
     /** Basically the number of hike days */
     var numberOfRotations: Int
+    
+    var description: String {
+        return "    • Group size: \(self.groupSize)\n    • Number of rotations: \(numberOfRotations)"
+    }
 }
 
