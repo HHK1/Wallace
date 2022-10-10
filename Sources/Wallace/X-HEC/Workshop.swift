@@ -7,75 +7,102 @@
 
 import Foundation
 
-private let defaultFactors = [
-    \HECStudent.isAGirl: 1,
-    \HECStudent.isFromHEC: 1,
-    \HECStudent.isFromPolytechnique: 1,
-    \HECStudent.isFromOther: 1,
-    \HECStudent.isBusiness: 1,
-    \HECStudent.isEngineer: 1,
-    \HECStudent.isOther: 1,
-    \HECStudent.isC2: 1,
-    \HECStudent.isDeepTech: 1
-]
+enum EncodedFactor: String, Codable {
+    case gender
+    case school
+    case type
+    case englishSpeaker
+    case track
+    
+    func makeFactors(multiplier: Int) ->  [KeyPath<HECStudent, Bool> : Int] {
+        switch self {
+        case .gender:
+            return [\HECStudent.isAGirl: multiplier]
+        case .school:
+            return [\HECStudent.isFromHEC: multiplier, \HECStudent.isFromPolytechnique: multiplier,\HECStudent.isFromOther: multiplier]
+        case .type:
+            return [\HECStudent.isBusiness: multiplier, \HECStudent.isEngineer: multiplier, \HECStudent.isOther: multiplier]
+        case .englishSpeaker:
+            return [\HECStudent.isC2: multiplier]
+        case .track:
+            return [\HECStudent.isDeepTech: multiplier]
+        }
+    }
+    
+    static var allFactors: Dictionary<EncodedFactor, Int> {
+        return [.gender: 10, .school: 10, .type: 10, .englishSpeaker: 10, .track: 10]
+    }
+}
 
-enum Workshop: String, Codable, CaseIterable {
+struct Workshop: Codable, CustomStringConvertible {
     
-    case jura
-    case crea
-    case scaleUp
-    case redressement
+    let name: String
+    let groupSize: Int
+    let rawHeterogeneousFactors: Dictionary<EncodedFactor, Int>
+    let rawHomogeneousFactors: Dictionary<EncodedFactor, Int>?
+    let hikeConfiguration: HikeConfiguration?
     
-    static var promoSize: Int = 0
-    
-    var groupSize: Int {
-        switch self {
-        case .jura:
-            return 3
-        case .crea:
-            return 3
-        case .scaleUp:
-            return 4
-        case .redressement:
-            return 4
-        }
+    var heterogeneousFactors: [KeyPath<HECStudent, Bool> : Int] {
+        return makeFactors(rawFactors: rawHeterogeneousFactors)
     }
     
-    var fileName: String  {
-        switch self {
-        case .jura:
-            return "jura.txt"
-        case .crea:
-            return "crea.txt"
-        case .scaleUp:
-            return "scaleUp.txt"
-        case .redressement:
-            return "redressement.txt"
-        }
-    }
-    
-    var heterogeneousFactors: Dictionary<KeyPath<HECStudent, Bool>, Int> {
-        switch self {
-        case .crea:
-            var factors = defaultFactors
-            factors.remove(at: factors.index(forKey: \HECStudent.isDeepTech)!)
-            return factors
-        default:
-            return defaultFactors
-        }
-    }
-    
-    var homogeneousFactors: Dictionary<KeyPath<HECStudent, Bool>, Int>? {
-        switch self {
-        case .crea:
-            return [\HECStudent.isDeepTech: 1]
-        default:
+    var homogeneousFactors: [KeyPath<HECStudent, Bool> : Int]? {
+        guard let rawFactors = rawHomogeneousFactors else {
             return nil
         }
+        return makeFactors(rawFactors: rawFactors)
+    }
+    
+    var fileName: String {
+        return "\(name).txt"
+    }
+
+    private func makeFactors(rawFactors: Dictionary<EncodedFactor, Int>) -> [KeyPath<HECStudent, Bool> : Int] {
+        let initialValue: [KeyPath<HECStudent, Bool> : Int] = [:]
+        return rawFactors.keys.reduce(initialValue) { (partialResult, encodedFactor) in
+            let decodedFactors = encodedFactor.makeFactors(multiplier: rawFactors[encodedFactor]!)
+            return partialResult.merging(decodedFactors, uniquingKeysWith: { (current, _) in current })
+        }
+    }
+    
+    var description: String {
+        return self.name
+    }
+    
+    static var allValues: Array<Workshop> = load()
+    
+    private static func load() -> Array<Workshop> {
+        do {
+            let decoder = JSONDecoder()
+            let data = try Data(contentsOf: URL(fileURLWithPath: "workshops.json"))
+            return try decoder.decode(Array<Workshop>.self, from: data)
+        } catch (let error) {
+            logWarning("Error initializing worshops, \(error.localizedDescription)")
+            return []
+        }
+    }
+    
+    static func save() throws {
+        let encoder = JSONEncoder()
+        let encoded = try encoder.encode(allValues)
+        try writeToFile(data: encoded, path: "workshops.json")
+    }
+    
+    static func getWorkshop(name: String) throws -> Workshop {
+        guard let workshop = allValues.first(where: { $0.name == name }) else {
+            throw CLIException.invalidWorkshopName
+        }
+        return workshop
     }
 }
 
-struct HikeJura {
-    static var groupSize: Int = 4
-    static var numberOfRotations: Int = 4
+/**
+    Configuration for the "groupes de marche" after the Jura workshop.
+ */
+struct HikeConfiguration: Codable {
+    /** Size of each group. In that case a group is a group of groups of students. */
+    var groupSize: Int
+    /** Basically the number of hike days */
+    var numberOfRotations: Int
 }
+

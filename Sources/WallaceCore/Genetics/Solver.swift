@@ -58,7 +58,7 @@ struct Solver {
         }
         
         let selectedFitness = fitnessOfPopulation[0...configuration.parentCount - 1]
-        logVerbose("Fitness score: \(selectedFitness.first!.1)")
+        logDebug("Fitness score: \(selectedFitness.first!.1)")
         
         var parents = selectedFitness.map{ population[$0.0] }
         parents.append(population[fitnessOfPopulation.last!.0])

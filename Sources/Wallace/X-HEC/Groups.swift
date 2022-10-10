@@ -8,10 +8,6 @@
 import Foundation
 import WallaceCore
 
-enum GroupError: Error {
-    case studentHasGroupMissing
-}
-
 /**
  Given students who have their group number set, regenerate the group array for a given workshop.
  */
@@ -20,8 +16,8 @@ func getGroups(from students: [HECStudent], for workshop: Workshop) throws -> [[
     var groups: [[HECStudent]] = Array.init(repeating: [], count: numberOfGroups)
     groups = try students.reduce(groups) { (result, student) -> [[HECStudent]] in
         var resultCopy = result
-        guard let groupNumber = student.groups[workshop] else {
-            throw GroupError.studentHasGroupMissing
+        guard let groupNumber = student.groups[workshop.name] else {
+            throw CLIException.studentHasGroupMissing
         }
         resultCopy[groupNumber].append(student)
         return resultCopy
@@ -38,8 +34,8 @@ func updateStudents(with groups: [Array<HECStudent>], for workshop: Workshop) ->
         let (index, group) = entry
        
         let groupStudents = group.map { (student) -> HECStudent in
-            student.groups[workshop] = index
-            student.studentsMetByWorshop[workshop] = group.filter({ $0.id != student.id }).map({ $0.id })
+            student.groups[workshop.name] = index
+            student.studentsMetByWorshop[workshop.name] = group.filter({ $0.id != student.id }).map({ $0.id })
             return student
         }
         var next = newStudents

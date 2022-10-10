@@ -27,9 +27,7 @@ struct Options: ParsableArguments {
 struct Wallace: ParsableCommand {
     
     static let configuration = CommandConfiguration(abstract: "Group students for each activity",
-                                                    subcommands: [Init.self, JuraGroups.self, JuraHikeGroups.self,
-                                                                  CreaGroups.self, RedressementGroups.self,
-                                                                  ScaleUpGroups.self, ExportStudents.self, RunAll.self, Remove.self])
+                                                    subcommands: [Init.self,  Group.self, HikeGroups.self, ExportStudents.self, RunAll.self, Remove.self])
 
     struct Init: ParsableCommand {
         @Argument(help: "The input file url containing the students")
@@ -39,54 +37,44 @@ struct Wallace: ParsableCommand {
             let data = try String(contentsOf: URL(fileURLWithPath: url))
             let students = parseStudentFile(data: data)
             try encodeStudents(students: students)
+            
+            let jura = Workshop(name: "jura", groupSize: 3, rawHeterogeneousFactors: EncodedFactor.allFactors, rawHomogeneousFactors: nil, hikeConfiguration: HikeConfiguration(groupSize: 4, numberOfRotations: 4))
+            let crea = Workshop(name: "crea", groupSize: 3, rawHeterogeneousFactors: [.gender: 10, .school: 10, .type: 10, .englishSpeaker: 10], rawHomogeneousFactors: [.track: 10], hikeConfiguration: nil)
+            let scaleup = Workshop(name: "scaleUp", groupSize: 4, rawHeterogeneousFactors: EncodedFactor.allFactors, rawHomogeneousFactors: nil, hikeConfiguration: nil)
+            let redressement = Workshop(name: "redressement", groupSize: 4, rawHeterogeneousFactors: EncodedFactor.allFactors, rawHomogeneousFactors: nil, hikeConfiguration: nil)
+            
+            Workshop.allValues = [jura, crea, scaleup, redressement]
+            try Workshop.save()
         }
     }
     
-    struct JuraGroups: ParsableCommand  {
+    struct Group: ParsableCommand  {
 
-        @OptionGroup var options: Options
-
-        func run() throws {
-            try runWorkshopCommand(workshop: .jura, options: options)
-        }
-    }
-    
-    struct JuraHikeGroups: ParsableCommand {
-        
-        @OptionGroup var options: Options
-        
-        func run() throws {
-            let students = try decodeStudents()
-            try makeJuraHikeRotation(students: students)
-        }
-    }
-    
-    struct CreaGroups: ParsableCommand  {
+        @Argument(help: "Name of the workshop")
+        var workshopName: String
         
         @OptionGroup var options: Options
 
         func run() throws {
-            try runWorkshopCommand(workshop: .crea, options: options)
+            let workshop = try Workshop.getWorkshop(name: workshopName)
+            try runWorkshopCommand(workshop: workshop, options: options)
         }
     }
     
-    struct ScaleUpGroups: ParsableCommand  {
-          
-          @OptionGroup var options: Options
-
-          func run() throws {
-            try runWorkshopCommand(workshop: .scaleUp, options: options)
-          }
+    struct HikeGroups: ParsableCommand {
+        
+        @Argument(help: "Name of the workshop")
+        var workshopName: String
+        
+        @OptionGroup var options: Options
+        
+        func run() throws {
+            let students = HECStudent.students
+            let workshop = try Workshop.getWorkshop(name: workshopName)
+            try makeHikeRotation(students: students, workshop: workshop)
+        }
     }
     
-    struct RedressementGroups: ParsableCommand  {
-          
-          @OptionGroup var options: Options
-
-          func run() throws {
-            try runWorkshopCommand(workshop: .redressement, options: options)
-          }
-    }
     
     struct ExportStudents: ParsableCommand {
                 
@@ -104,9 +92,8 @@ struct Wallace: ParsableCommand {
 
         func run() throws {
             try initialize(url: url, options: options)
-            try Workshop.allCases.forEach({ try Wallace.runWorkshopCommand(workshop: $0, options: options) })
-            let students = try decodeStudents()
-            try makeJuraHikeRotation(students: students)
+            try Workshop.allValues.forEach({ try Wallace.runWorkshopCommand(workshop: $0, options: options) })
+            try Workshop.allValues.forEach({ try Wallace.makeHikeRotation(students: HECStudent.students, workshop: $0) })
             try exportAll()
         }
     }
@@ -114,16 +101,12 @@ struct Wallace: ParsableCommand {
     struct Remove: ParsableCommand {
         
         @Argument(help: "The workshop to remove.")
-        var workshop: String
+        var workshopName: String
         
         func run() throws {
-            let students = try decodeStudents()
-            guard let worshopValue = Workshop(rawValue: workshop) else {
-                logError("Invalid workshop \(workshop)")
-                return
-            }
-            students.forEach({ $0.groups[worshopValue] = nil; $0.studentsMetByWorshop[worshopValue] = nil; })
-            try encodeStudents(students: students)
+            let worshop = try Workshop.getWorkshop(name: workshopName)
+            HECStudent.students.forEach({ $0.groups[worshop.name] = nil; $0.studentsMetByWorshop[worshop.name] = nil; })
+            try HECStudent.save()
         }
         
     }
@@ -136,8 +119,7 @@ struct Wallace: ParsableCommand {
     
     private static func runWorkshopCommand(workshop: Workshop, options: Options) throws {
         CLILogger.shared.logLevel = LogLevel(value: options.logLevel)
-        let students = try decodeStudents()
-        let updatedStudents = try makeWorkshop(students: students, workshop: workshop, options: options)
+        let updatedStudents = try makeWorkshop(students: HECStudent.students, workshop: workshop, options: options)
         try encodeStudents(students: updatedStudents)
     }
     
@@ -145,8 +127,7 @@ struct Wallace: ParsableCommand {
      Make the groups for the given workshop and return students with updated group infos 
     */
     private static func makeWorkshop(students: [HECStudent], workshop: Workshop, options: Options) throws -> [HECStudent] {
-        Workshop.promoSize = students.count
-        logInfo("Starting groups for workshop \(workshop.rawValue) with groups of size \(workshop.groupSize)")
+        logInfo("Starting groups for workshop \(workshop) with groups of size \(workshop.groupSize)")
         let groups = makeGroups(students: students, options: options, workshop: workshop)
         let updatedStudents = updateStudents(with: groups, for: workshop)
         return updatedStudents
@@ -169,9 +150,14 @@ struct Wallace: ParsableCommand {
         return groups
     }
     
-    private static func makeJuraHikeRotation(students: [HECStudent]) throws {
-        let groups = try getGroups(from: students, for: .jura)
-        let rotations = createGroupRotations(populationSize: groups.count, groupSize: HikeJura.groupSize, numberOfRotations: HikeJura.numberOfRotations)
+    private static func makeHikeRotation(students: [HECStudent], workshop: Workshop) throws {
+        guard let hikeConfiguration = workshop.hikeConfiguration else {
+            logError("Workshop \(workshop) is missing a hike configuration")
+            throw CLIException.invalidWorkshopName
+        }
+        
+        let groups = try getGroups(from: students, for: workshop)
+        let rotations = createGroupRotations(populationSize: groups.count, groupSize: hikeConfiguration.groupSize, numberOfRotations: hikeConfiguration.numberOfRotations)
         let updatedStudents = updateStudents(students: students, with: rotations, groups: groups)
         try encodeStudents(students: updatedStudents)
         for (index, rotation) in rotations.enumerated() {
@@ -180,11 +166,10 @@ struct Wallace: ParsableCommand {
     }
     
     private static func exportAll() throws {
-        let students = try decodeStudents()
-        try exportStudents(students: students)
-        Workshop.allCases.forEach { (workshop) in
+        try exportStudents(students: HECStudent.students)
+        Workshop.allValues.forEach { (workshop) in
             do {
-                let groups = try getGroups(from: students, for: workshop)
+                let groups = try getGroups(from: HECStudent.students, for: workshop)
                 try exportGroups(groups: groups, filename: workshop.fileName)
             } catch (let error) {
                 logError("Failed to export group", error.localizedDescription)
