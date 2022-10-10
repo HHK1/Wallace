@@ -36,7 +36,7 @@ public enum LogLevel: Int {
     }
 }
 
-public protocol LoggerDelegate: class {
+public protocol LoggerDelegate: AnyObject {
     func didReceiveLog(log: @autoclosure () -> Any, level: LogLevel)
 }
 
