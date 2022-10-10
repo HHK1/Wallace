@@ -7,6 +7,6 @@
 
 import Foundation
 
-struct Chromosome {
+struct Chromosome: Hashable {
     let genes: [UInt8] 
 }

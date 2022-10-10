@@ -36,13 +36,13 @@ final class WallaceTests: XCTestCase {
            return Float(first - last)
        }
        
-        func shouldStopReproduction(solution: Chromosome, generation: Int) -> Bool {
-            return generation == 100
+        func validateSolution(generation: Int, parents: Set<Chromosome>) -> Chromosome? {
+            return generation == 100 ? parents.first : nil
         }
         let chromosome = Chromosome(genes: (1...20).map { $0 })
         let initialPopulation = Array(repeating: chromosome, count: 10)
-        let configuration = Configuration(populationSize: 20, mutationProbability: 0.2, maxGenerations: 100, parentCount: 10, maxNumberPermutation: 3)
-        let solver = Solver(initialPopulation: initialPopulation, fitness: fitness, configuration: configuration, shouldStopReproduction: shouldStopReproduction)
+        let configuration = Configuration(populationSize: 20, mutationProbability: 0.2, maxGenerations: 100, parentCount: 10, maxNumberPermutation: 3, randomParents: 0)
+        let solver = Solver(initialPopulation: initialPopulation, fitness: fitness, configuration: configuration, validateSolution: validateSolution)
        let bestFit = solver.run()
        XCTAssertEqual(bestFit.genes.first, 20)
        XCTAssertEqual(bestFit.genes.last, 1)
@@ -85,7 +85,7 @@ final class WallaceTests: XCTestCase {
         }
         
         let students = (1...9).map({ TestStudent(id: $0, knowsSwift: ($0 % 3) == 0, knowsObjc: ($0 % 3) == 1 )})
-        let configuration = Configuration(populationSize: 20, mutationProbability: 0.5, maxGenerations: 50, parentCount: 10, maxNumberPermutation: 3)
+        let configuration = Configuration(populationSize: 20, mutationProbability: 0.5, maxGenerations: 50, parentCount: 10, maxNumberPermutation: 3, randomParents: 0)
         let grouping = Grouping(students: students,
                                 heterogeneousFactors: [\TestStudent.knowsSwift: 1, \TestStudent.knowsObjc: 1],
                                 homogeneousFactors: nil, groupSize: 3, configuration: configuration)
@@ -112,7 +112,7 @@ final class WallaceTests: XCTestCase {
         }
         
         let students = (1...9).map({ TestStudent(id: $0, knowsSwift: ($0 % 3) == 0, knowsObjc: ($0 % 3) == 1 )})
-        let configuration = Configuration(populationSize: 20, mutationProbability: 0.5, maxGenerations: 50, parentCount: 10, maxNumberPermutation: 3)
+        let configuration = Configuration(populationSize: 20, mutationProbability: 0.5, maxGenerations: 50, parentCount: 10, maxNumberPermutation: 3, randomParents: 0)
         let grouping = Grouping(students: students,
                                 heterogeneousFactors: [\TestStudent.knowsSwift: 1],
                                 homogeneousFactors: [\TestStudent.knowsObjc: 1], groupSize: 3,
@@ -223,7 +223,7 @@ final class WallaceTests: XCTestCase {
         }
         
         let students = (1...120).map({ TestStudent(id: $0, knowsSwift: ($0 % 3) == 0, knowsObjc: ($0 <= 70) )})
-        let configuration = Configuration(populationSize: 20, mutationProbability: 0.5, maxGenerations: 50, parentCount: 10, maxNumberPermutation: 3)
+        let configuration = Configuration(populationSize: 20, mutationProbability: 0.5, maxGenerations: 50, parentCount: 10, maxNumberPermutation: 3, randomParents: 0)
         let grouping = Grouping(students: students.shuffled(),
                                 heterogeneousFactors: [\TestStudent.knowsSwift: 1],
                                 homogeneousFactors: [\TestStudent.knowsObjc: 1], groupSize: 3,
@@ -257,7 +257,7 @@ final class WallaceTests: XCTestCase {
         }
         
         let students = (1...120).map({ TestStudent(id: $0, knowsSwift: ($0 % 2) == 0, knowsObjc: ($0 <= 60) )})
-        let configuration = Configuration(populationSize: 20, mutationProbability: 0.5, maxGenerations: 50, parentCount: 10, maxNumberPermutation: 3)
+        let configuration = Configuration(populationSize: 20, mutationProbability: 0.5, maxGenerations: 50, parentCount: 10, maxNumberPermutation: 3, randomParents: 0)
         let grouping = Grouping(students: students.shuffled(),
                                 heterogeneousFactors: nil,
                                 homogeneousFactors: [\TestStudent.knowsObjc: 1, \TestStudent.knowsSwift: 1],

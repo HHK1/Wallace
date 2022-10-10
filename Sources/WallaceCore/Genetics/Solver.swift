@@ -11,64 +11,88 @@ struct Solver {
     
     let initialPopulation: Array<Chromosome>
     let fitness: (_ chromosome: Chromosome) -> Float
-    let shouldStopReproduction: (_ solution: Chromosome, _ generation: Int) -> Bool
+    let validateSolution: (_ generation: Int, _ parents: Set<Chromosome>) -> Chromosome?
+    let makeRandomParent: (() -> Chromosome)?
     let configuration: Configuration
     let mutationDistribution: [Double]
     
     init(initialPopulation: Array<Chromosome>,
          fitness: @escaping (_ chromosome: Chromosome) -> Float,
          configuration: Configuration,
-         shouldStopReproduction:  @escaping (_ solution: Chromosome, _ generation: Int) -> Bool) {
+         validateSolution:  @escaping (_ generation: Int, _ parents: Set<Chromosome>) -> Chromosome?,
+         makeRandomParent: (() -> Chromosome)? = nil) {
         
         self.initialPopulation = initialPopulation
         self.fitness = fitness
         self.configuration = configuration
-        self.shouldStopReproduction = shouldStopReproduction
+        self.validateSolution = validateSolution
+        self.makeRandomParent = makeRandomParent
         self.mutationDistribution = poissonDistribution(lambda: 1.0, max: configuration.maxNumberPermutation)
     }
     
     func run() -> Chromosome {
-        var population = initialPopulation
+        var population = bootstrapInitialPopulation()
         var generation = 0
-        var parents = selectParents(population: population)
-        var bestFit = parents.first!
+        var (fitnessScore, parents) = selectParents(population: population)
+        var solution: Chromosome? = nil
         logInfo("Running solver...")
         
-        while !shouldStopReproduction(bestFit, generation) {
-            logDebug("Starting generation \(generation)")
-            let offsprings = createOffsprings(parents: parents)
-            let mutatedOffsprings = generateMutations(offsprings: offsprings)
-            parents.append(contentsOf: mutatedOffsprings)
-            population = parents
+        while solution == nil {
+            logDebug("Starting generation \(generation), fitness: \(fitnessScore)")
+            population = generatePopulation(parents: parents)
+            (fitnessScore, parents) = selectParents(population: population)
+            solution = validateSolution(generation, parents)
             generation += 1
-            parents = selectParents(population: population)
-            bestFit = parents.first!
         }
         
-        logInfo("Stopped iteration after \(generation) generations, best fit: \(self.fitness(bestFit))")
-        return bestFit
+        logInfo("Stopped iteration after \(generation) generations, best fit: \(self.fitness(solution!))")
+        return solution!
     }
     
-    func selectParents(population: Array<Chromosome>) -> Array<Chromosome> {
-        var fitnessOfPopulation: [(Int, Float)] = population.enumerated().map { (index, chromosome) -> (Int, Float) in
-            return (index, self.fitness(chromosome))
+    func bootstrapInitialPopulation() -> Set<Chromosome> {
+        var population = Set(initialPopulation)
+        
+        if population.count == 0 {
+            assertionFailure("No initial population")
+        }
+
+      
+        while population.count < configuration.populationSize {
+            population.insert(self.makeRandomParent?() ?? Chromosome(genes: population.first!.genes.shuffled()))
+        }
+        return population
+    }
+    
+    func generatePopulation(parents: Set<Chromosome>) -> Set<Chromosome> {
+        var population = parents
+
+        if let makeRandomParent = makeRandomParent, configuration.randomParents > 0 {
+            (0...configuration.randomParents - 1).forEach({_ in population.insert(makeRandomParent()) })
+        }
+        
+        while population.count < configuration.populationSize {
+            let offsprings = createOffsprings(parents: Array(population))
+            let mutatedOffsprings = generateMutations(offsprings: offsprings)
+            mutatedOffsprings.forEach({ population.insert($0) })
+        }
+        return population
+    }
+    
+    func selectParents(population: Set<Chromosome>) -> (Float, Set<Chromosome>) {
+        var fitnessOfPopulation: [(Chromosome, Float)] = population.enumerated().map { (index, chromosome) -> (Chromosome, Float) in
+            return (chromosome, self.fitness(chromosome))
         }
         fitnessOfPopulation.sort { (lhs, rhs) -> Bool in
             return lhs.1 > rhs.1
         }
         
-        let selectedFitness = fitnessOfPopulation[0...configuration.parentCount - 1]
-        logDebug("Fitness score: \(selectedFitness.first!.1)")
-        
-        var parents = selectedFitness.map{ population[$0.0] }
-        parents.append(population[fitnessOfPopulation.last!.0])
-        return parents
+        let selectedFitness = fitnessOfPopulation[0...configuration.parentCount - 1]        
+        return (selectedFitness.first!.1, Set(selectedFitness.map{ $0.0 }))
     }
     
     func createOffsprings(parents: Array<Chromosome>) -> Array<Chromosome> {
-        var offsprings: [Chromosome] = []
-        
-        while offsprings.count < configuration.populationSize + parents.count {
+        var offsprings: Array<Chromosome> = []        
+        while offsprings.count < configuration.populationSize - parents.count {
             let randomPair = generateRandomPair(count: parents.count)
             let offspring = orderCrossover(parent1: parents[randomPair.0], parent2: parents[randomPair.1])
             offsprings.append(offspring)

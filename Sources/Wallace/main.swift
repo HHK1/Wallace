@@ -6,19 +6,22 @@ import ArgumentParser
 struct Options: ParsableArguments {
 
     @Option(help: "The size of a population at a given generation")
-    var populationSize: Int = 10
+    var populationSize: Int = 20
 
     @Option(help: "Number of parents selected at a given generation")
-    var parentCount: Int = 5
+    var parentCount: Int = 3
 
     @Option(help: "Probability of a mutation happening on a child chromosome")
     var mutationProbability: Float = 0.7
 
     @Option(help: "Max number of generations. Increase to run the algorithm longer")
-    var maxGeneration: Int = 1000
+    var maxGeneration: Int = 500
     
     @Option(help: "The max number of permutations in a single mutation")
-    var maxNumberPermutation: Int = 4
+    var maxNumberPermutation: Int = 5
+    
+    @Option(help: "Number of random parents added at each generation")
+    var randomParents: Int = 0
     
     @Option(help: "Set the log level. Defaults to info.")
     var logLevel: String = "info"
@@ -93,7 +96,10 @@ struct Wallace: ParsableCommand {
         func run() throws {
             try initialize(url: url, options: options)
             try Workshop.allValues.forEach({ try Wallace.runWorkshopCommand(workshop: $0, options: options) })
-            try Workshop.allValues.forEach({ try Wallace.makeHikeRotation(students: HECStudent.students, workshop: $0) })
+            try Workshop.allValues.forEach({ (worshop) in
+                if (worshop.hikeConfiguration == nil) { return }
+                try Wallace.makeHikeRotation(students: HECStudent.students, workshop: worshop)
+            })
             try exportAll()
         }
     }
@@ -141,7 +147,8 @@ struct Wallace: ParsableCommand {
                                                      mutationProbability: options.mutationProbability,
                                                      maxGenerations: options.maxGeneration,
                                                      parentCount: options.parentCount,
-                                                     maxNumberPermutation: options.maxNumberPermutation)
+                                                     maxNumberPermutation: options.maxNumberPermutation,
+                                                     randomParents: options.randomParents)
                    
         let grouping = Grouping(students: students, heterogeneousFactors: workshop.heterogeneousFactors, homogeneousFactors: workshop.homogeneousFactors, groupSize: workshop.groupSize, configuration: configuration, verify: { (groups) -> Bool in
             return isSolutionValid(groups: groups, workshop: workshop)

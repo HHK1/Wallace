@@ -11,7 +11,7 @@ public typealias Vector = [Float]
 typealias StudentGroup = [Vector]
 public typealias Factors<T: Student> = Dictionary<KeyPath<T, Bool>, Int>
 
-public protocol Student {
+public protocol Student: Hashable, Equatable {
     var id: UInt8 { get }
     var description: String { get }
     func makeHeterogeneousAttributeVector(factors: Factors<Self>) -> Vector
@@ -19,17 +19,24 @@ public protocol Student {
 }
 
 public extension Student {
-    // TODO: these should include the actual mutliplying factor
     func makeHeterogeneousAttributeVector(factors: Factors<Self>) -> Vector {
-        return factors.keys.map({ self[keyPath: $0] ? 1 : 0 })
+        return factors.keys.map({ self[keyPath: $0] ? Float(factors[$0]!) : 0 })
     }
     
     func makeHomogenenousAttributeVector(factors: Factors<Self>) -> Vector {
-        return factors.keys.map({ self[keyPath: $0] ? 1 : 0 })
+        return factors.keys.map({ self[keyPath: $0] ? Float(factors[$0]!) : 0 })
     }
     
     var description: String {
         return "\(self.id)"
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    static func == (lhs: any Student, rhs: any Student) -> Bool {
+        return lhs.id == rhs.id
     }
 }
 
@@ -87,7 +94,7 @@ public class Grouping<StudentType: Student> {
         
         self.groupSize = groupSize
         self.configuration = configuration
-        self.verify = verify
+        self.verify = verify == nil ? nil : memoize(verify!)
         
         let initialValue: Array<(StudentType) -> Bool> = []
         self.homogeneousSortFunctions = self.homogeneousFactors?.reduce(initialValue, { (groupFunctions, factor) in
@@ -109,10 +116,14 @@ public class Grouping<StudentType: Student> {
     }
     
     func makeInitialPopulation(count: Int) -> Array<Chromosome> {
-        return (1...count).map({ _ in makeChromosomeSortedByHomogeneity() })
+        return (1...count).map({ _ in makeRandomParent() })
     }
     
-    func makeChromosomeSortedByHomogeneity() -> Chromosome {
+    func makeRandomParent() -> Chromosome {
+        return makeChromosomeSortedByHomogeneity()
+    }
+    
+    private func makeChromosomeSortedByHomogeneity() -> Chromosome {
         guard let sortFunctions = self.homogeneousSortFunctions else {
             return Chromosome(genes: self.students.map({ $0.id }).shuffled())
         }
@@ -134,7 +145,6 @@ public class Grouping<StudentType: Student> {
         let vectorGroups = chromosome.genes.map({ vectorsMap[$0]! }).chunked(into: groupSize)
         let groupMeans = vectorGroups.map({ calculateMeanVector(vectors: $0) })
         let distance = calculateDistance(vectors: groupMeans)
-        logVerbose("heterogeneous fitness: \(distance)")
         return -distance
     }
     
@@ -143,47 +153,31 @@ public class Grouping<StudentType: Student> {
         let vectorGroups = chromosome.genes.map({ vectorsMap[$0]! }).chunked(into: groupSize)
         let groupMeans = vectorGroups.map({ calculateMeanVector(vectors: $0) })
         let distance = calculateDistance(vectors: groupMeans)
-        let fitness = distance * 30 // TODO: find a better way to skew the fitness
-        logVerbose("homogeneous fitness: \(fitness)")
-        return fitness
+        return distance
     }
     
     public func run() -> Array<Array<StudentType>> {
         
-        func shouldStopReproduction(solution: Chromosome, generation: Int) -> Bool {
-            if (generation <= configuration.maxGenerations) { return false }
-            guard let verify = verify else { return true }
-        
-            let groups = solution.genes.map({ studentsMap[$0]! }).chunked(into: groupSize)
-            return verify(groups)
+        func validateSolution(generation: Int, parents: Set<Chromosome>) -> Chromosome? {
+            if (generation <= configuration.maxGenerations) { return nil }
+            guard let verify = verify else { return parents.first }
+            
+            let solution = parents.first(where: { (chromosom) in
+                let groups = chromosom.genes.map({ studentsMap[$0]! }).chunked(into: groupSize)
+                return verify(groups)
+            })
+            
+            return solution
+            
         }
         let initialPopulation = makeInitialPopulation(count: configuration.populationSize)
         let solver = Solver(initialPopulation: initialPopulation,
                              fitness: self.fitness(chromosome:),
                              configuration: configuration,
-                             shouldStopReproduction: shouldStopReproduction)
+                             validateSolution: validateSolution,
+                             makeRandomParent: self.makeRandomParent)
         
         let finalChromosome = solver.run()
         return finalChromosome.genes.map({ studentsMap[$0]! }).chunked(into: groupSize)
     }
-    
-//    private func generateInitialPopulation() -> Array<Chromosome> {
-//        var population: Array<Chromosome> = []
-//
-//        func shouldStopReproduction(solution: Chromosome, generation: Int) -> Bool {
-//            return generation == configuration.maxGenerations / configuration.parentCount
-//        }
-//
-//        for _ in 1...configuration.parentCount {
-//            let initialPopulation = makeInitialPopulation(count: configuration.populationSize)
-//            let solver  = Solver(initialPopulation: initialPopulation,
-//                                 fitness: self.fitness,
-//                                 configuration: configuration,
-//                                 shouldStopReproduction: shouldStopReproduction)
-//
-//            let finalChromosome = solver.run()
-//            population.append(finalChromosome)
-//        }
-//        return population
-//    }
 }

@@ -73,15 +73,15 @@ final class HECStudent: Student, Codable {
     }
     
     func makeHeterogeneousAttributeVector(factors: Factors<HECStudent>) -> Vector {
-        var vector: Vector = factors.keys.map({ self[keyPath: $0] ? 1 : 0 })
+        var vector: Vector = factors.keys.map({ self[keyPath: $0] ? Float(factors[$0]!) : 0 })
         var studentsMetVector = Array<Float>(repeating: 0.0, count: HECStudent.students.count)
-        self.studentsMet.forEach({ studentsMetVector[Int($0)] = 5.0 })
+        self.studentsMet.forEach({ studentsMetVector[Int($0)] = 1.0 })
         vector.append(contentsOf: studentsMetVector)
         return vector
     }
     
     func makeHomogenenousAttributeVector(factors: Factors<HECStudent>) -> Vector {
-        return factors.keys.map({ self[keyPath: $0] ? 1 : 0 })
+        return factors.keys.map({ self[keyPath: $0] ? Float(factors[$0]!) : 0 })
     }
     
     var description: String {
@@ -142,6 +142,10 @@ final class HECStudent: Student, Codable {
     
     static func save() throws {
         try encodeStudents(students: HECStudent.students)
+    }
+    
+    static func == (lhs: HECStudent, rhs: HECStudent) -> Bool {
+        return lhs.id == rhs.id
     }
 }
 
