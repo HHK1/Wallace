@@ -93,6 +93,6 @@ Return the fittest parent
 
 ## Installing
 
-`swift build -c release && cp -f .build/release/Wallace /usr/local/bin/wallace` 
+`make build`
 
 You can now use `wallace` as a standalone CLI.

@@ -146,7 +146,7 @@ struct Workshops: ParsableCommand {
                     print("Enter the size of each groups:")
                     let groupSize = getNumberInput()
                     hikeConfiguration = HikeConfiguration(groupSize: groupSize, numberOfRotations: rotations)
-                }g
+                }
             }
             
             workshop = Workshop(name: workshopName, groupSize: groupSize, rawHeterogeneousFactors: rawHeterogeneousFactors, rawHomogeneousFactors: rawHomogeneousFactors, hikeConfiguration: hikeConfiguration)
