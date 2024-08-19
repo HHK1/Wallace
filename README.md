@@ -11,6 +11,7 @@ This package is split between `Wallace`, which contains code specific for the us
 2. Run the following:
 
 ```shell
+$ swift build
 $ swift build -c release
 $ cd .build/release
 $ cp -f Wallace /usr/local/bin/wallace
@@ -25,9 +26,9 @@ The first one allows to manage the workshops as the requirements changes every y
 For example the workshops in 2024 were created with the following
 
 ```shell
-wallace workshops new Jura --group-size 3 --hetero gender --hetero school --hetero type --hetero frenchSpeaker --hike
-wallace workshops new Start-up --group-size 3 --hetero gender --hetero school --hetero type --hetero frenchSpeaker
-wallace workshops new Redressement --group-size 4 --hetero gender --hetero school --hetero type --hetero frenchSpeaker
+$ wallace workshops new Jura --group-size 3 --hetero gender --hetero school --hetero type --hetero frenchSpeaker --hike
+$ wallace workshops new Start-up --group-size 3 --hetero gender --hetero school --hetero type --hetero frenchSpeaker
+$ wallace workshops new Redressement --group-size 4 --hetero gender --hetero school --hetero type --hetero frenchSpeaker
 ```
 
 The `new` subcommand takes the name as the main argument, and the following arguments:
