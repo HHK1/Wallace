@@ -12,26 +12,24 @@ enum EncodedFactor: String, Codable, ExpressibleByArgument {
     case gender
     case school
     case type
-    case englishSpeaker
-    case track
+    case frenchSpeaker
     
     func makeFactors(multiplier: Int) ->  [KeyPath<HECStudent, Bool> : Int] {
         switch self {
         case .gender:
             return [\HECStudent.isAGirl: multiplier]
         case .school:
-            return [\HECStudent.isFromHEC: multiplier, \HECStudent.isFromPolytechnique: multiplier,\HECStudent.isFromOther: multiplier]
+            return [\HECStudent.isGE: multiplier, \HECStudent.isMsc: multiplier]
         case .type:
             return [\HECStudent.isBusiness: multiplier, \HECStudent.isEngineer: multiplier, \HECStudent.isOther: multiplier]
-        case .englishSpeaker:
-            return [\HECStudent.isC2: multiplier]
-        case .track:
-            return [\HECStudent.isDeepTech: multiplier]
+        case .frenchSpeaker:
+            return [\HECStudent.isFrench: multiplier]
+        
         }
     }
     
     static var allFactors: Dictionary<EncodedFactor, Int> {
-        return [.gender: 10, .school: 10, .type: 10, .englishSpeaker: 10, .track: 10]
+        return [.gender: 10, .school: 10, .type: 10, .frenchSpeaker: 10]
     }
 }
 

@@ -19,14 +19,15 @@ final class HECStudent: Student, Codable {
     let lastName: String
     
     let isAGirl: Bool
-    let isFromHEC: Bool
-    let isFromPolytechnique: Bool
-    let isFromOther: Bool
+    
+    let isGE: Bool
+    let isMsc: Bool
+    
     let isBusiness: Bool
     let isEngineer: Bool
     let isOther: Bool
-    let isC2: Bool
-    let isDeepTech: Bool
+    
+    let isFrench: Bool
     
     
     var groups: Dictionary<String, Int> = Dictionary()
@@ -55,21 +56,20 @@ final class HECStudent: Student, Codable {
         self.id = id
         self.firstName = row[1].trim()
         self.lastName = row[0].trim()
-        self.isAGirl = row[2].trim() == "F"
+        self.isAGirl = row[2].trim() == "Female"
         
         let recruitement = row[3].trim()
-        self.isFromHEC = recruitement == "HEC GE"
-        self.isFromPolytechnique = recruitement == "X"
-        self.isFromOther = recruitement == "MSc"
+
+        self.isGE = recruitement == "GE"
+        self.isMsc = recruitement == "MSC"
             
-        let category = row[4].trim()
+        let background = row[5].trim()
         
-        self.isBusiness = category == "Business"
-        self.isEngineer = category == "Engineer"
-        self.isOther = category == "Other"
+        self.isBusiness = background == "Business"
+        self.isEngineer = background == "Engineering"
+        self.isOther = background == "Other"
         
-        self.isC2 = row[5].trim() == "C2"
-        self.isDeepTech = row[6].trim() == Mineur.deepTech.rawValue
+        self.isFrench = row[4].trim() == "Française"
     }
     
     func makeHeterogeneousAttributeVector(factors: Factors<HECStudent>) -> Vector {
@@ -87,12 +87,10 @@ final class HECStudent: Student, Codable {
     var description: String {
         var type = ""
         var recruitement = ""
-        if self.isFromPolytechnique {
-            recruitement = "X"
-        } else if self.isFromHEC {
-            recruitement = "HEC GE"
-        } else if self.isFromOther {
-            recruitement = "MSc"
+        if self.isGE {
+            recruitement = "GE"
+        } else if self.isMsc {
+            recruitement = "MSC"
         }
         
         if self.isEngineer {
@@ -104,10 +102,9 @@ final class HECStudent: Student, Codable {
         }
         
         let gender = self.isAGirl ? "F" : "M"
-        let mineur = self.isDeepTech ? Mineur.deepTech.rawValue : Mineur.highTouch.rawValue
-        let frenchSpeaker = self.isC2 ? "C2" : "Not C2"
+        let frenchSpeaker = self.isFrench ? "Française" : "Etrangère"
         
-        var components: Array<String> = ["\(id)", firstName, lastName, gender, recruitement, type, frenchSpeaker, mineur]
+        var components: Array<String> = ["\(id)", firstName, lastName, gender, recruitement, type, frenchSpeaker]
 
         // Historically the group numbers start at 100
         let workshopDesc = Workshop.allValues.map({ groups[$0.name] == nil ? "?" : "\(groups[$0.name]! + HECStudent.groupOffset)"})
@@ -124,7 +121,7 @@ final class HECStudent: Student, Codable {
     }
     
     static var csvTitle: String {
-        return ["Id", "First Name", "Last Name", "Gender", "Recruitement", "Category", "French Speaker","Mineur", "Groupe Jura",  "Groupe Créa", "Groupe Scale Up", "Groupe Redressement", "Groupe Marche Jura Jour 1", "Groupe Marche Jura Jour 2", "Groupe Marche Jura Jour 3", "Groupe Marche Jura Jour 4"].joined(separator: ";") + "\n"
+        return ["Id", "First Name", "Last Name", "Gender", "Recruitement", "Category", "Nationalité", "Groupe Jura", "Groupe Start-up", "Groupe Redressement", "Groupe Marche Jura Jour 1", "Groupe Marche Jura Jour 2", "Groupe Marche Jura Jour 3", "Groupe Marche Jura Jour 4"].joined(separator: ";") + "\n"
     }
     
     static var students: Array<HECStudent> = load()
