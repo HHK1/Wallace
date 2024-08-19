@@ -16,10 +16,37 @@ $ cd .build/release
 $ cp -f Wallace /usr/local/bin/wallace
 ```
 
-
 ## Usage
 
-All the commands support the following options:
+There are two main commands: `workshops` and `students`.
+
+The first one allows to manage the workshops as the requirements changes every year.
+
+For example the workshops in 2024 were created with the following
+
+```shell
+wallace workshops new Jura --group-size 3 --hetero gender --hetero school --hetero type --hetero frenchSpeaker --hike
+wallace workshops new Start-up --group-size 3 --hetero gender --hetero school --hetero type --hetero frenchSpeaker
+wallace workshops new Redressement --group-size 4 --hetero gender --hetero school --hetero type --hetero frenchSpeaker
+```
+
+The `new` subcommand takes the name as the main argument, and the following arguments:
+
+- `--group-size`: The desired size of groups 
+- `--hetero`: A repeatable flag for the parameters that should be heterogeized 
+- `--homo`: A repeatable flag for the parameters that should be homogeneized
+- `--hike`: A boolean flag to set if you want to generate groups of groups for this workshop
+
+The `students` command contains the following sub-commands:
+
+- `load`: load the given URL as the initial CSV file and parse it into an intermediary data format
+- `group`: run the genetic algorithm to make the group for the given workshop 
+- `hike-groups`: run the meta-grouping algorithm to make the hike groups for the given workshop
+- `export`: export the intermediary data format to CSV
+- `run-all`: run all the workshops and hike groups + the export
+- `remove-workshop`: remove a workshop if you want to re-run it
+
+The `group` and `run-all` support the following options:
 
 - `--group-size`: The desired size of groups (default: 3)
 - `--population-size`: The size of a population at a given generation (default: 10)
@@ -28,13 +55,6 @@ All the commands support the following options:
 - `--max-generation`: Max number of generations. Increase to run the algorithm longer (default: 1000)
 -  `--debug`: Enable debug logs
 
-The first command to run is `wallace jura-groups <file_url>`, with a reference to a csv file containing the students.
-A file containing the groups will be outputed, and a file saving the students in an internal format will be saved.
-
-You can then run in order
-- `wallace crea-groups` which create groups for each minor (Deep Tech & High Touch)
-- `wallace redressement-groups`
-- `wallace scale-up groups`
 
 
 ## Literature on genetic algorithms
